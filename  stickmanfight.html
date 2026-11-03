@@ -1,0 +1,1991 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Supreme Stickman Duelist Auto Battle Deluxe</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Outfit:wght@400;600;800;900&display=swap');
+
+    * {
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+    }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      background-color: #050811;
+      color: #f8fafc;
+      overflow: hidden;
+      margin: 0;
+      padding: 0;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    .font-game {
+      font-family: 'Fredoka One', cursive, sans-serif;
+    }
+
+    .glass-panel {
+      background: rgba(15, 23, 42, 0.88);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+    }
+
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.6);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #3b82f6;
+      border-radius: 4px;
+    }
+
+    .joystick-zone {
+      position: absolute;
+      bottom: 24px;
+      width: 130px;
+      height: 130px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      border-radius: 50%;
+      touch-action: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 40;
+    }
+
+    .joystick-knob {
+      width: 50px;
+      height: 50px;
+      background: radial-gradient(circle, rgba(255,255,255,0.95) 0%, rgba(180,200,255,0.7) 100%);
+      border-radius: 50%;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+      position: absolute;
+      pointer-events: none;
+    }
+
+    @keyframes pulse-glow {
+      0%, 100% { transform: scale(1); opacity: 0.92; }
+      50% { transform: scale(1.03); opacity: 1; }
+    }
+    .animate-pulse-glow {
+      animation: pulse-glow 2.2s infinite ease-in-out;
+    }
+  </style>
+</head>
+<body class="flex flex-col items-center justify-center relative w-full h-full select-none bg-slate-950">
+
+  <!-- 메인 게임 캔버스 컨테이너 -->
+  <div id="canvas-container" class="relative w-full h-full flex items-center justify-center overflow-hidden">
+    <canvas id="gameCanvas" class="w-full h-full block bg-slate-950 cursor-crosshair"></canvas>
+
+    <!-- 인게임 실시간 HUD 레이어 -->
+    <div id="hud-layer" class="absolute top-0 left-0 w-full p-3 md:p-5 pointer-events-none flex justify-between items-start z-20 hidden">
+      <!-- Player 1 Status -->
+      <div class="flex items-center space-x-3 bg-slate-900/90 p-2.5 px-4 rounded-2xl border border-blue-500/50 backdrop-blur-md min-w-[210px] md:min-w-[290px] shadow-lg">
+        <div class="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-blue-600 flex items-center justify-center font-game text-xl shadow-lg text-white ring-2 ring-blue-400">P1</div>
+        <div class="flex-1">
+          <div class="flex justify-between items-center mb-1">
+            <span class="font-game text-blue-400 text-sm md:text-base tracking-wide" id="hud-p1-name">PLAYER 1</span>
+            <span class="font-bold text-xs md:text-sm text-blue-200" id="hud-p1-hp-text">100 HP</span>
+          </div>
+          <div class="w-full h-3 md:h-3.5 bg-slate-800 rounded-full overflow-hidden p-0.5 border border-slate-700">
+            <div id="hud-p1-hp-bar" class="h-full bg-gradient-to-r from-blue-600 to-cyan-400 rounded-full transition-all duration-150 w-full"></div>
+          </div>
+          <div class="flex items-center justify-between mt-1 text-[11px] text-slate-300">
+            <span id="hud-p1-weapon" class="truncate max-w-[150px] font-semibold">⚔️ Katana</span>
+            <span id="hud-p1-type" class="text-blue-400 font-bold uppercase text-[9px] px-1.5 py-0.5 bg-blue-500/20 rounded">BLADE</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Center Match Info -->
+      <div class="flex flex-col items-center">
+        <div class="bg-slate-900/90 border border-amber-500/60 px-4 py-1.5 rounded-full backdrop-blur-md shadow-xl flex items-center space-x-2">
+          <i class="fa-solid fa-map-location-dot text-amber-400 text-xs"></i>
+          <span id="hud-map-title" class="font-game text-amber-300 text-xs md:text-sm uppercase tracking-wider">CYBER PINBALL</span>
+        </div>
+        <div id="hud-match-score" class="font-game text-2xl md:text-3xl text-white tracking-wider mt-1 drop-shadow-md">
+          <span id="score-p1" class="text-blue-400">0</span> - <span id="score-p2" class="text-red-400">0</span>
+        </div>
+      </div>
+
+      <!-- Player 2 Status -->
+      <div class="flex items-center space-x-3 bg-slate-900/90 p-2.5 px-4 rounded-2xl border border-red-500/50 backdrop-blur-md min-w-[210px] md:min-w-[290px] shadow-lg">
+        <div class="flex-1 text-right">
+          <div class="flex justify-between items-center mb-1 flex-row-reverse">
+            <span class="font-game text-red-400 text-sm md:text-base tracking-wide" id="hud-p2-name">PLAYER 2</span>
+            <span class="font-bold text-xs md:text-sm text-red-200" id="hud-p2-hp-text">100 HP</span>
+          </div>
+          <div class="w-full h-3 md:h-3.5 bg-slate-800 rounded-full overflow-hidden p-0.5 border border-slate-700">
+            <div id="hud-p2-hp-bar" class="h-full bg-gradient-to-l from-red-600 to-rose-400 rounded-full transition-all duration-150 w-full ml-auto"></div>
+          </div>
+          <div class="flex items-center justify-between mt-1 text-[11px] text-slate-300 flex-row-reverse">
+            <span id="hud-p2-weapon" class="truncate max-w-[150px] font-semibold">🔫 Pistol</span>
+            <span id="hud-p2-type" class="text-red-400 font-bold uppercase text-[9px] px-1.5 py-0.5 bg-red-500/20 rounded">GUN</span>
+          </div>
+        </div>
+        <div class="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-red-600 flex items-center justify-center font-game text-xl shadow-lg text-white ring-2 ring-red-400" id="hud-p2-avatar">P2</div>
+      </div>
+    </div>
+
+    <!-- Pause Button -->
+    <button id="btn-pause" class="absolute top-4 right-4 z-30 w-10 h-10 bg-slate-800/80 hover:bg-slate-700 text-white rounded-full border border-slate-600 flex items-center justify-center shadow-lg transition pointer-events-auto hidden">
+      <i class="fa-solid fa-pause"></i>
+    </button>
+
+    <!-- Mobile Virtual Joysticks -->
+    <div id="joystick-p1" class="joystick-zone left-6 bottom-6 hidden">
+      <div id="knob-p1" class="joystick-knob"></div>
+    </div>
+    <div id="joystick-p2" class="joystick-zone right-6 bottom-6 hidden">
+      <div id="knob-p2" class="joystick-knob"></div>
+    </div>
+  </div>
+
+  <!-- MAIN MENU OVERLAY -->
+  <div id="main-menu" class="absolute inset-0 z-50 flex flex-col items-center justify-center p-4 bg-gradient-to-b from-slate-950/95 via-slate-900/95 to-slate-950/98 backdrop-blur-xl">
+    <div class="text-center mb-5 animate-pulse-glow">
+      <div class="inline-block px-3 py-1 bg-amber-500/20 border border-amber-500/40 rounded-full text-amber-400 font-bold text-xs uppercase tracking-widest mb-2">
+        ⚡ 124 AUTO-FIRING WEAPONS &amp; 16 DYNAMIC INTERACTIVE MAPS
+      </div>
+      <h1 class="font-game text-4xl sm:text-6xl md:text-7xl text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-300 to-rose-400 drop-shadow-[0_10px_25px_rgba(59,130,246,0.35)]">
+        SUPREME DUELIST
+      </h1>
+      <p class="text-slate-400 text-xs sm:text-sm font-semibold mt-1">자이로 기믹, 회전 톱날, 포털 워프, 점프패드가 결합된 스틱맨 대전격투</p>
+    </div>
+
+    <!-- Settings Box -->
+    <div class="glass-panel w-full max-w-4xl rounded-3xl p-5 md:p-7 grid grid-cols-1 md:grid-cols-3 gap-5 border border-slate-700/60 shadow-2xl">
+      <!-- Col 1: Mode -->
+      <div class="flex flex-col space-y-2.5">
+        <label class="font-game text-amber-400 text-sm flex items-center space-x-2">
+          <i class="fa-solid fa-gamepad"></i> <span>GAME MODE</span>
+        </label>
+        <button id="mode-vs-ai" class="mode-btn active p-3 rounded-2xl bg-blue-600 border-2 border-blue-400 text-left hover:bg-blue-500 transition flex items-center justify-between shadow-lg">
+          <div>
+            <div class="font-bold text-sm text-white">1P vs Smart AI</div>
+            <div class="text-xs text-blue-200">거리 조절 및 점프 회피 컴퓨터</div>
+          </div>
+          <i class="fa-solid fa-robot text-xl text-blue-200"></i>
+        </button>
+        <button id="mode-survival" class="mode-btn p-3 rounded-2xl bg-slate-800 border-2 border-slate-700 text-left hover:bg-slate-700 transition flex items-center justify-between">
+          <div>
+            <div class="font-bold text-sm text-white">Survival Mode</div>
+            <div class="text-xs text-slate-400">점점 강해지는 연속 대전</div>
+          </div>
+          <i class="fa-solid fa-skull text-xl text-slate-400"></i>
+        </button>
+        <button id="mode-1v1" class="mode-btn p-3 rounded-2xl bg-slate-800 border-2 border-slate-700 text-left hover:bg-slate-700 transition flex items-center justify-between">
+          <div>
+            <div class="font-bold text-sm text-white">Local 1v1 Dual</div>
+            <div class="text-xs text-slate-400">한 화면에서 2인용 키보드/터치 대전</div>
+          </div>
+          <i class="fa-solid fa-users text-xl text-slate-400"></i>
+        </button>
+
+        <div class="pt-1">
+          <label class="font-game text-amber-400 text-xs block mb-1">TARGET WINS</label>
+          <div class="grid grid-cols-3 gap-2">
+            <button class="target-win-btn active bg-blue-600 text-white font-bold py-1.5 rounded-xl text-xs" data-wins="3">First to 3</button>
+            <button class="target-win-btn bg-slate-800 text-slate-300 font-bold py-1.5 rounded-xl text-xs hover:bg-slate-700" data-wins="5">First to 5</button>
+            <button class="target-win-btn bg-slate-800 text-slate-300 font-bold py-1.5 rounded-xl text-xs hover:bg-slate-700" data-wins="10">First to 10</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Col 2: Weapons -->
+      <div class="flex flex-col space-y-2.5">
+        <div class="flex justify-between items-center">
+          <label class="font-game text-amber-400 text-sm flex items-center space-x-2">
+            <i class="fa-solid fa-gun"></i> <span>WEAPONS (124 Total)</span>
+          </label>
+          <span id="weapon-mode-tag" class="text-[10px] bg-indigo-500/30 text-indigo-300 px-2 py-0.5 rounded-md font-bold">RANDOM</span>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <button id="btn-weapon-rand" class="weapon-mode-btn active p-2.5 rounded-xl bg-indigo-600 border border-indigo-400 text-xs font-bold text-white flex items-center justify-center space-x-1">
+            <i class="fa-solid fa-shuffle"></i> <span>매 라운드 랜덤</span>
+          </button>
+          <button id="btn-weapon-select" class="weapon-mode-btn p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-xs font-bold text-slate-300 hover:bg-slate-700 flex items-center justify-center space-x-1">
+            <i class="fa-solid fa-list-check"></i> <span>무기 직접선택</span>
+          </button>
+        </div>
+        <div id="weapon-picker-box" class="flex-1 bg-slate-900/90 border border-slate-700/80 rounded-2xl p-3 flex flex-col justify-center items-center text-center overflow-y-auto max-h-[160px]">
+          <div id="weapon-preview-icon" class="text-4xl mb-1">🎲</div>
+          <div id="weapon-preview-title" class="font-game text-sm text-amber-300">Random Weapon Roulette</div>
+          <div id="weapon-preview-desc" class="text-[11px] text-slate-400 mt-1">124가지의 근접, 원거리, 마법, 엽기 무기가 무작위로 주어집니다!</div>
+        </div>
+      </div>
+
+      <!-- Col 3: Dynamic Maps -->
+      <div class="flex flex-col space-y-2.5">
+        <div class="flex justify-between items-center">
+          <label class="font-game text-amber-400 text-sm flex items-center space-x-2">
+            <i class="fa-solid fa-map"></i> <span>ARENA MAP (16 Arenas)</span>
+          </label>
+          <span id="selected-map-name" class="text-xs text-amber-300 font-bold truncate max-w-[120px]">Pinball Kingdom</span>
+        </div>
+        <div class="grid grid-cols-2 gap-2 overflow-y-auto max-h-[180px] p-1" id="map-grid">
+          <!-- Populated via JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="mt-5 flex flex-wrap items-center justify-center gap-4">
+      <button id="btn-start-game" class="font-game text-xl px-12 py-3.5 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-rose-600 text-white shadow-[0_0_30px_rgba(79,70,229,0.5)] hover:scale-105 active:scale-95 transition border-2 border-indigo-300 flex items-center space-x-3">
+        <i class="fa-solid fa-play"></i>
+        <span>BATTLE START!</span>
+      </button>
+      <button id="btn-controls-info" class="p-3.5 rounded-2xl bg-slate-800 border border-slate-700 text-slate-300 hover:bg-slate-700 transition" title="Controls Guide">
+        <i class="fa-solid fa-keyboard text-lg"></i>
+      </button>
+      <button id="btn-sound-toggle" class="p-3.5 rounded-2xl bg-slate-800 border border-slate-700 text-slate-300 hover:bg-slate-700 transition" title="Audio Sound">
+        <i class="fa-solid fa-volume-high text-lg" id="sound-icon"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- WEAPON SELECTION MODAL (124 Weapons Grid) -->
+  <div id="modal-weapon-select" class="absolute inset-0 z-50 flex items-center justify-center p-3 md:p-6 bg-slate-950/90 backdrop-blur-xl hidden">
+    <div class="glass-panel w-full max-w-5xl rounded-3xl p-5 border border-slate-700 flex flex-col max-h-[90vh]">
+      <div class="flex justify-between items-center mb-3">
+        <div>
+          <h2 class="font-game text-2xl text-amber-400 flex items-center space-x-2">
+            <i class="fa-solid fa-gun"></i> <span>무기 선택 (총 124종)</span>
+          </h2>
+          <p class="text-xs text-slate-400">원하는 무기를 클릭하면 해당 무기로 전투가 시작됩니다.</p>
+        </div>
+        <button id="btn-close-weapon-modal" class="w-9 h-9 rounded-full bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <!-- Categories Tab -->
+      <div class="flex space-x-2 mb-3 overflow-x-auto pb-1">
+        <button class="weapon-filter-btn active px-3 py-1 bg-blue-600 rounded-xl text-xs font-bold" data-filter="all">전체보기 (124)</button>
+        <button class="weapon-filter-btn px-3 py-1 bg-slate-800 text-slate-300 rounded-xl text-xs font-bold hover:bg-slate-700" data-filter="blade">근접/도검 (35)</button>
+        <button class="weapon-filter-btn px-3 py-1 bg-slate-800 text-slate-300 rounded-xl text-xs font-bold hover:bg-slate-700" data-filter="gun">총기/중화기 (35)</button>
+        <button class="weapon-filter-btn px-3 py-1 bg-slate-800 text-slate-300 rounded-xl text-xs font-bold hover:bg-slate-700" data-filter="laser">레이저/광선 (18)</button>
+        <button class="weapon-filter-btn px-3 py-1 bg-slate-800 text-slate-300 rounded-xl text-xs font-bold hover:bg-slate-700" data-filter="quirky">마법/특수/개그 (36)</button>
+      </div>
+
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2.5 overflow-y-auto p-2 flex-1" id="weapon-modal-grid">
+        <!-- Dynamically generated weapon cards -->
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTROLS GUIDE MODAL -->
+  <div id="modal-controls" class="absolute inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-xl hidden">
+    <div class="glass-panel w-full max-w-lg rounded-3xl p-6 border border-slate-700 text-center">
+      <h2 class="font-game text-2xl text-amber-400 mb-4"><i class="fa-solid fa-gamepad"></i> 컨트롤 조작 가이드</h2>
+      <div class="grid grid-cols-2 gap-4 text-left text-sm mb-6">
+        <div class="bg-slate-900/80 p-4 rounded-2xl border border-blue-500/30">
+          <div class="font-game text-blue-400 mb-2 text-base">PLAYER 1</div>
+          <p><span class="bg-slate-800 px-2 py-0.5 rounded text-xs font-mono font-bold">A / D</span> : 좌우 이동</p>
+          <p class="mt-1"><span class="bg-slate-800 px-2 py-0.5 rounded text-xs font-mono font-bold">W</span> : 점프 / 도약</p>
+          <p class="mt-1"><span class="bg-slate-800 px-2 py-0.5 rounded text-xs font-mono font-bold">S</span> : 급강하 낙하</p>
+          <p class="text-[11px] text-blue-300 mt-2">⚔️ 무기는 적을 향해 쿨타임마다 자동 발사됩니다!</p>
+        </div>
+        <div class="bg-slate-900/80 p-4 rounded-2xl border border-red-500/30">
+          <div class="font-game text-red-400 mb-2 text-base">PLAYER 2 (1v1)</div>
+          <p><span class="bg-slate-800 px-2 py-0.5 rounded text-xs font-mono font-bold">← / →</span> : 좌우 이동</p>
+          <p class="mt-1"><span class="bg-slate-800 px-2 py-0.5 rounded text-xs font-mono font-bold">↑</span> : 점프 / 도약</p>
+          <p class="mt-1"><span class="bg-slate-800 px-2 py-0.5 rounded text-xs font-mono font-bold">↓</span> : 급강하 낙하</p>
+          <p class="text-[11px] text-red-300 mt-2">📱 모바일 및 터치 환경에서는 온스크린 조이스틱 제공</p>
+        </div>
+      </div>
+      <button id="btn-close-controls" class="w-full py-3 bg-blue-600 font-game rounded-xl text-white hover:bg-blue-500">확인 완료</button>
+    </div>
+  </div>
+
+  <!-- PAUSE / VICTORY MODAL OVERLAY -->
+  <div id="modal-pause-victory" class="absolute inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md hidden">
+    <div class="glass-panel w-full max-w-md rounded-3xl p-6 text-center border border-slate-700 shadow-2xl">
+      <div id="pause-victory-title" class="font-game text-3xl text-amber-400 mb-2">GAME PAUSED</div>
+      <div id="pause-victory-subtitle" class="text-slate-300 text-sm mb-6">잠시 휴식 후 경기를 재개하세요</div>
+      <div class="flex flex-col space-y-2.5">
+        <button id="btn-resume" class="py-3 bg-blue-600 font-game rounded-2xl text-white hover:bg-blue-500 transition">계속하기</button>
+        <button id="btn-next-round" class="py-3 bg-amber-600 font-game rounded-2xl text-white hover:bg-amber-500 transition hidden">다음 라운드</button>
+        <button id="btn-restart" class="py-3 bg-indigo-600 font-game rounded-2xl text-white hover:bg-indigo-500 transition">경기 재시작</button>
+        <button id="btn-return-menu" class="py-3 bg-slate-800 font-game rounded-2xl text-slate-300 hover:bg-slate-700 border border-slate-700 transition">메인 메뉴</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ==========================================================================
+       1. WEB AUDIO SYNTHESIZER
+       ========================================================================== */
+    class AudioSynth {
+      constructor() {
+        this.ctx = null;
+        this.muted = false;
+      }
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioContext();
+        }
+        if (this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+      play(type) {
+        if (this.muted || !this.ctx) return;
+        const ctx = this.ctx;
+        const now = ctx.currentTime;
+
+        try {
+          if (type === 'slash') {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(450, now);
+            osc.frequency.exponentialRampToValueAtTime(70, now + 0.12);
+            gain.gain.setValueAtTime(0.3, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now);
+            osc.stop(now + 0.12);
+          } else if (type === 'gunshot') {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(900, now);
+            osc.frequency.exponentialRampToValueAtTime(110, now + 0.08);
+            gain.gain.setValueAtTime(0.35, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now);
+            osc.stop(now + 0.08);
+          } else if (type === 'laser') {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(1300, now);
+            osc.frequency.exponentialRampToValueAtTime(180, now + 0.15);
+            gain.gain.setValueAtTime(0.25, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now);
+            osc.stop(now + 0.15);
+          } else if (type === 'hit') {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(260, now);
+            osc.frequency.exponentialRampToValueAtTime(50, now + 0.09);
+            gain.gain.setValueAtTime(0.35, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.09);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now);
+            osc.stop(now + 0.09);
+          } else if (type === 'bounce') {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(300, now);
+            osc.frequency.linearRampToValueAtTime(750, now + 0.15);
+            gain.gain.setValueAtTime(0.3, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now);
+            osc.stop(now + 0.15);
+          } else if (type === 'portal') {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(800, now);
+            osc.frequency.exponentialRampToValueAtTime(200, now + 0.2);
+            gain.gain.setValueAtTime(0.3, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now);
+            osc.stop(now + 0.2);
+          } else if (type === 'victory') {
+            [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
+              const osc = ctx.createOscillator();
+              const gain = ctx.createGain();
+              osc.frequency.value = freq;
+              gain.gain.setValueAtTime(0.2, now + idx * 0.09);
+              gain.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.09 + 0.25);
+              osc.connect(gain);
+              gain.connect(ctx.destination);
+              osc.start(now + idx * 0.09);
+              osc.stop(now + idx * 0.09 + 0.25);
+            });
+          }
+        } catch (e) {}
+      }
+    }
+    const audioSynth = new AudioSynth();
+
+    /* ==========================================================================
+       2. WEAPONS DATABASE (124 WEAPONS EXPANSION)
+       ========================================================================== */
+    const WEAPONS_DATABASE = [
+      // --- Category 1: Blades & Melee (35개) ---
+      { id: 'katana', name: '명검 카타나', type: 'blade', cd: 0.55, dmg: 19, kb: 14, icon: '⚔️', color: '#38bdf8', desc: '고속 대시 베기' },
+      { id: 'greatsword', name: '대검 브레이커', type: 'blade', cd: 1.25, dmg: 34, kb: 25, icon: '🗡️', color: '#cbd5e1', desc: '지면 강타 충격파' },
+      { id: 'dagger', name: '암살 단검', type: 'blade', cd: 0.28, dmg: 10, kb: 8, icon: '🔪', color: '#94a3b8', desc: '3연속 초고속 난무' },
+      { id: 'spear', name: '발키리 창', type: 'blade', cd: 0.75, dmg: 22, kb: 17, icon: '🔱', color: '#f59e0b', desc: '초장거리 찌르기' },
+      { id: 'scythe', name: '사신의 낫', type: 'blade', cd: 1.05, dmg: 29, kb: 21, icon: '🌙', color: '#c084fc', desc: '영혼 수확 반월참' },
+      { id: 'chainsaw', name: '전기톱', type: 'blade', cd: 0.14, dmg: 6, kb: 4, icon: '🪚', color: '#ef4444', desc: '불꽃 튀는 연속 그라인딩' },
+      { id: 'fryingpan', name: '황금 후라이팬', type: 'blade', cd: 0.68, dmg: 21, kb: 27, icon: '🍳', color: '#64748b', desc: '찰진 타격음과 폭풍 넉백' },
+      { id: 'axe', name: '바이킹 도끼', type: 'blade', cd: 0.85, dmg: 25, kb: 19, icon: '🪓', color: '#b45309', desc: '회전하는 무거운 투척도끼' },
+      { id: 'hammer', name: '토르 해머', type: 'blade', cd: 1.35, dmg: 37, kb: 29, icon: '🔨', color: '#e2e8f0', desc: '지진을 일으키는 쿵' },
+      { id: 'lightsaber', name: '광선검', type: 'blade', cd: 0.48, dmg: 23, kb: 16, icon: '🔦', color: '#22c55e', desc: '플라즈마 레이저 블레이드' },
+      { id: 'trident', name: '포세이돈 삼지창', type: 'blade', cd: 0.85, dmg: 22, kb: 18, icon: '🧜‍♂️', color: '#06b6d4', desc: '수룡 충격파 발사' },
+      { id: 'lollipop', name: '자이언트 롤리팝', type: 'blade', cd: 0.75, dmg: 19, kb: 20, icon: '🍭', color: '#f43f5e', desc: '달콤살벌 둔기 후려치기' },
+      { id: 'broom', name: '마녀의 빗자루', type: 'blade', cd: 0.65, dmg: 17, kb: 17, icon: '🧹', color: '#d97706', desc: '돌풍을 일으키는 쓸기' },
+      { id: 'yoyo', name: '전투 요요', type: 'blade', cd: 0.58, dmg: 18, kb: 13, icon: '🪀', color: '#a855f7', desc: '되돌아오는 연속 타격 휠' },
+      { id: 'boxingglove', name: '용수철 글러브', type: 'blade', cd: 0.7, dmg: 23, kb: 26, icon: '🥊', color: '#dc2626', desc: '원거리 강펀치 넉아웃' },
+      { id: 'nunchaku', name: '쌍절곤', type: 'blade', cd: 0.35, dmg: 13, kb: 11, icon: '🥢', color: '#f59e0b', desc: '눈에 보이지 않는 타격 연타' },
+      { id: 'halberd', name: '중갑 미늘창', type: 'blade', cd: 0.95, dmg: 27, kb: 22, icon: '🪓', color: '#94a3b8', desc: '광범위 휩쓸기 베기' },
+      { id: 'rapier', name: '황실 레이피어', type: 'blade', cd: 0.38, dmg: 14, kb: 9, icon: '🤺', color: '#e0f2fe', desc: '펜싱 찌르기 연속 돌진' },
+      { id: 'mace', name: '가시 철퇴', type: 'blade', cd: 1.1, dmg: 31, kb: 24, icon: '💥', color: '#71717a', desc: '육중한 스파이크 타격' },
+      { id: 'katana_dark', name: '요도 무라마사', type: 'blade', cd: 0.52, dmg: 24, kb: 15, icon: '🗡️', color: '#7c3aed', desc: '암흑 검기를 뿜는 베기' },
+      { id: 'cleaver', name: '정육점 손도끼', type: 'blade', cd: 0.62, dmg: 20, kb: 18, icon: '🔪', color: '#ef4444', desc: '거침없는 수직 찍기' },
+      { id: 'guitar_axe', name: '헤비메탈 배틀기타', type: 'blade', cd: 0.8, dmg: 24, kb: 23, icon: '🎸', color: '#ec4899', desc: '기타로 머리 강타 & 음파' },
+      { id: 'pickaxe_blade', name: '흑요석 곡괭이', type: 'blade', cd: 0.72, dmg: 23, kb: 17, icon: '⛏️', color: '#334155', desc: '암석을 깨부수는 일격' },
+      { id: 'shield_bash', name: '스파이크 방패', type: 'blade', cd: 0.85, dmg: 20, kb: 30, icon: '🛡️', color: '#0284c7', desc: '돌진 방패 밀치기' },
+      { id: 'sickle', name: '농부의 낫', type: 'blade', cd: 0.45, dmg: 15, kb: 12, icon: '🌾', color: '#84cc16', desc: '재빠른 회전 베기' },
+      { id: 'tonfa', name: '경찰 톤파', type: 'blade', cd: 0.42, dmg: 14, kb: 14, icon: '🦯', color: '#475569', desc: '좌우 연속 꺾기 타격' },
+      { id: 'anchor', name: '해적 닻', type: 'blade', cd: 1.45, dmg: 40, kb: 32, icon: '닻', color: '#1e293b', desc: '거대한 닻을 휘둘러 제압' },
+      { id: 'bone_club', name: '공룡 뼈몽둥이', type: 'blade', cd: 1.0, dmg: 28, kb: 24, icon: '🦴', color: '#fef08a', desc: '원시적인 무지막지한 강타' },
+      { id: 'plasma_claws', name: '플라즈마 클로', type: 'blade', cd: 0.3, dmg: 11, kb: 9, icon: '🐾', color: '#38bdf8', desc: '빛의 손톱 연타' },
+      { id: 'shovel', name: '야전 삽', type: 'blade', cd: 0.65, dmg: 19, kb: 21, icon: '🥄', color: '#64748b', desc: '지면을 파서 던지는 삽질' },
+      { id: 'fan_blade', name: '철선 (철부채)', type: 'blade', cd: 0.5, dmg: 16, kb: 15, icon: '🪭', color: '#f43f5e', desc: '예리한 칼날 부채바람' },
+      { id: 'crowbar', name: '쇠지렛 (빠루)', type: 'blade', cd: 0.58, dmg: 18, kb: 18, icon: '🔧', color: '#dc2626', desc: '물리학 전공자의 묵직한 일격' },
+      { id: 'cane', name: '신사의 칼지팡이', type: 'blade', cd: 0.48, dmg: 17, kb: 11, icon: '🦯', color: '#fcd34d', desc: '지팡이 속 숨겨진 검격' },
+      { id: 'dual_blades', name: '쌍검 블레이드', type: 'blade', cd: 0.36, dmg: 12, kb: 10, icon: '⚔️', color: '#06b6d4', desc: '양손 교차 고속 난무' },
+      { id: 'energy_whip', name: '에너지 채찍', type: 'blade', cd: 0.7, dmg: 21, kb: 19, icon: '➰', color: '#e879f9', desc: '중거리 타격 & 낚아채기' },
+
+      // --- Category 2: Guns & Heavy Projectiles (35개) ---
+      { id: 'pistol', name: '클래식 권총', type: 'gun', cd: 0.42, dmg: 14, kb: 11, icon: '🔫', color: '#fbbf24', desc: '빠른 단발 탄환 사격' },
+      { id: 'shotgun', name: '산탄총 샷건', type: 'gun', cd: 0.95, dmg: 12, kb: 20, icon: '💥', color: '#f97316', desc: '5발 펠릿 확산 발사' },
+      { id: 'sniper', name: '대구경 저격총', type: 'gun', cd: 1.4, dmg: 44, kb: 22, icon: '🎯', color: '#ef4444', desc: '관통 초고속 일격필살' },
+      { id: 'assaultrifle', name: '돌격소총 M4', type: 'gun', cd: 0.55, dmg: 11, kb: 9, icon: '⚡', color: '#3b82f6', desc: '4점사 고속 연사' },
+      { id: 'bazooka', name: 'RPG 로켓포', type: 'gun', cd: 1.5, dmg: 42, kb: 28, icon: '🚀', color: '#10b981', desc: '폭발 탄두 로켓 발사' },
+      { id: 'plasmarifle', name: '플라즈마 캐논', type: 'gun', cd: 0.8, dmg: 25, kb: 15, icon: '🔮', color: '#a855f7', desc: '튕기는 에너지 플라즈마구' },
+      { id: 'watergun', name: '고압 워터캐논', type: 'gun', cd: 0.22, dmg: 6, kb: 17, icon: '💦', color: '#0ea5e9', desc: '적을 날려버리는 물대포' },
+      { id: 'grenadelauncher', name: '유탄 발사기', type: 'gun', cd: 1.15, dmg: 33, kb: 23, icon: '💣', color: '#84cc16', desc: '벽에 튕기는 시한 폭탄' },
+      { id: 'crossbow', name: '기계식 석궁', type: 'gun', cd: 0.75, dmg: 26, kb: 13, icon: '🏹', color: '#d97706', desc: '3갈래 관통 화살' },
+      { id: 'portalgun', name: '포털 건', type: 'gun', cd: 1.05, dmg: 18, kb: 12, icon: '🌀', color: '#06b6d4', desc: '차원 왜곡 탄환 투척' },
+      { id: 'slimegun', name: '슬라임 블래스터', type: 'gun', cd: 0.6, dmg: 16, kb: 9, icon: '🧪', color: '#22c55e', desc: '끈적한 감속 젤리탄' },
+      { id: 'minigun', name: '회전식 개틀링', type: 'gun', cd: 0.16, dmg: 6.5, kb: 7, icon: '⚙️', color: '#f59e0b', desc: '초고속 탄막 연사' },
+      { id: 'revolver', name: '서부의 매그넘', type: 'gun', cd: 0.7, dmg: 28, kb: 18, icon: '🤠', color: '#d97706', desc: '묵직한 헤드샷 반동' },
+      { id: 'flaregun', name: '신호탄 총', type: 'gun', cd: 0.85, dmg: 21, kb: 14, icon: '🚨', color: '#f43f5e', desc: '붉은 화염 낙하산 조명탄' },
+      { id: 'nailgun', name: '공사용 못총', type: 'gun', cd: 0.3, dmg: 9, kb: 6, icon: '🔩', color: '#94a3b8', desc: '못 연사 고속 발사' },
+      { id: 'paintball', name: '페인트볼 건', type: 'gun', cd: 0.38, dmg: 12, kb: 8, icon: '🎨', color: '#ec4899', desc: '알록달록 물감 스프레이' },
+      { id: 'cannon', name: '해적 대포', type: 'gun', cd: 1.6, dmg: 48, kb: 32, icon: '🏴‍☠️', color: '#334155', desc: '육중한 무쇠 쇳덩이 발사' },
+      { id: 'harpoon', name: '작살총', type: 'gun', cd: 0.82, dmg: 27, kb: 19, icon: '⚓', color: '#38bdf8', desc: '강력한 쇠작살 발사' },
+      { id: 'flintlock', name: '구식 플린트락', type: 'gun', cd: 0.9, dmg: 30, kb: 17, icon: '🪵', color: '#ca8a04', desc: '화약 연기와 굵직한 납탄' },
+      { id: 'dual_pistols', name: '쌍권총 아킴보', type: 'gun', cd: 0.32, dmg: 11, kb: 8, icon: '🔫', color: '#facc15', desc: '양손 교대 더블 사격' },
+      { id: 'mortar', name: '휴대용 박격포', type: 'gun', cd: 1.4, dmg: 39, kb: 25, icon: '🪖', color: '#65a30d', desc: '곡사포 궤적 폭발탄' },
+      { id: 'energy_blaster', name: '스타 블래스터', type: 'gun', cd: 0.5, dmg: 19, kb: 12, icon: '✨', color: '#60a5fa', desc: '펄스 에너지탄' },
+      { id: 'blowgun', name: '아마존 독침대', type: 'gun', cd: 0.35, dmg: 12, kb: 5, icon: '🎋', color: '#16a34a', desc: '빠른 연속 마비 독침' },
+      { id: 'slingshot', name: '새총', type: 'gun', cd: 0.45, dmg: 15, kb: 11, icon: '🎯', color: '#b45309', desc: '강철 쇠구슬 튕기기' },
+      { id: 'submachine', name: '기관단총 SMG', type: 'gun', cd: 0.28, dmg: 8.5, kb: 6, icon: '⚡', color: '#475569', desc: '초근접 난사 스프레이' },
+      { id: 'homing_missile', name: '유도 미사일건', type: 'gun', cd: 1.3, dmg: 31, kb: 16, icon: '🚀', color: '#ef4444', desc: '적을 추적하는 미사일' },
+      { id: 'boomerang_gun', name: '부메랑 캐논', type: 'gun', cd: 0.8, dmg: 23, kb: 14, icon: '🪃', color: '#d97706', desc: '되돌아오는 칼날 투포환' },
+      { id: 'disk_launcher', name: '원반 발사기', type: 'gun', cd: 0.65, dmg: 20, kb: 12, icon: '💿', color: '#cbd5e1', desc: '벽에 수차례 튕기는 톱날 디스크' },
+      { id: 'acid_gun', name: '강산성 분사기', type: 'gun', cd: 0.4, dmg: 13, kb: 7, icon: '☣️', color: '#84cc16', desc: '초록 부식성 산성액' },
+      { id: 'railgun', name: '전자기 레일건', type: 'gun', cd: 1.55, dmg: 46, kb: 26, icon: '🧲', color: '#38bdf8', desc: '음속 돌파 전자기 탄환' },
+      { id: 'cluster_bomb', name: '집속탄 발사기', type: 'gun', cd: 1.35, dmg: 16, kb: 14, icon: '🎆', color: '#f59e0b', desc: '공중 분열 4중 소형폭탄' },
+      { id: 'sound_cannon', name: '음파 바주카', type: 'gun', cd: 0.75, dmg: 22, kb: 25, icon: '📢', color: '#ec4899', desc: '적을 밀어내는 충격 음파' },
+      { id: 'freeze_gun', name: '급속 냉각건', type: 'gun', cd: 0.85, dmg: 20, kb: 12, icon: '🧊', color: '#a5f3fc', desc: '적을 얼어붙게 만드는 냉기탄' },
+      { id: 'needle_gun', name: '스파이크 니들건', type: 'gun', cd: 0.32, dmg: 10, kb: 6, icon: '🪡', color: '#e2e8f0', desc: '다중 가시 바늘 연사' },
+      { id: 'heavy_bolter', name: '헤비 볼터건', type: 'gun', cd: 0.9, dmg: 32, kb: 20, icon: '🛡️', color: '#f97316', desc: '폭발성 대형 볼트 탄환' },
+
+      // --- Category 3: Lasers & Energy Beams (18개) ---
+      { id: 'lasercannon', name: '지속 레이저 빔', type: 'laser', cd: 0.1, dmg: 3.2, kb: 2, icon: '🔴', color: '#f43f5e', desc: '끊기지 않는 광선 공격' },
+      { id: 'flamethrower', name: '화염방사기', type: 'laser', cd: 0.1, dmg: 2.8, kb: 1.6, icon: '🔥', color: '#f97316', desc: '전방 화염 화마 분사' },
+      { id: 'thundergun', name: '번개 체인건', type: 'laser', cd: 0.85, dmg: 28, kb: 15, icon: '⚡', color: '#facc15', desc: '순간 내리꽂히는 벼락' },
+      { id: 'rainbow', name: '무지개 레인보우 빔', type: 'laser', cd: 0.1, dmg: 3.6, kb: 3, icon: '🌈', color: '#f43f5e', desc: '화려한 7색 레이저 광선' },
+      { id: 'alienray', name: '외계 축소 광선', type: 'laser', cd: 0.95, dmg: 18, kb: 11, icon: '👽', color: '#10b981', desc: '적을 소인으로 축소시킴' },
+      { id: 'gamma_ray', name: '감마선 펄스', type: 'laser', cd: 0.6, dmg: 24, kb: 13, icon: '☢️', color: '#22c55e', desc: '방사능 광폭 레이저 펄스' },
+      { id: 'ice_beam', name: '영하의 프리징 빔', type: 'laser', cd: 0.1, dmg: 2.6, kb: 1.8, icon: '❄️', color: '#38bdf8', desc: '체온을 뺏는 얼음 광선' },
+      { id: 'solar_beam', name: '태양열 솔라 캐논', type: 'laser', cd: 1.2, dmg: 36, kb: 22, icon: '☀️', color: '#ea580c', desc: '집중 태양광 폭열 광선' },
+      { id: 'void_beam', name: '공허의 흑색 광선', type: 'laser', cd: 0.12, dmg: 3.8, kb: 2.2, icon: '🌑', color: '#4c1d95', desc: '암흑 에너지 줄기' },
+      { id: 'plasma_torch', name: '초고온 플라즈마 토치', type: 'laser', cd: 0.1, dmg: 3.0, kb: 2.0, icon: '🔦', color: '#06b6d4', desc: '강철도 녹이는 불꽃 빔' },
+      { id: 'optic_blast', name: '옵틱 블래스트', type: 'laser', cd: 0.7, dmg: 26, kb: 18, icon: '🕶️', color: '#ef4444', desc: '눈에서 나가는 붉은 레이저' },
+      { id: 'healing_inverter', name: '역전 힐링 레이저', type: 'laser', cd: 0.5, dmg: 20, kb: 10, icon: '💉', color: '#a855f7', desc: '생명력을 흡수하는 광선' },
+      { id: 'crystal_laser', name: '수정 굴절 레이저', type: 'laser', cd: 0.65, dmg: 23, kb: 14, icon: '💎', color: '#f472b6', desc: '프리즘 굴절 분산 빔' },
+      { id: 'tachyon_ray', name: '타키온 입자 가속기', type: 'laser', cd: 0.1, dmg: 3.4, kb: 2.5, icon: '⚛️', color: '#38bdf8', desc: '시공간 입자 연속 사격' },
+      { id: 'aurora_beam', name: '오로라 광선총', type: 'laser', cd: 0.75, dmg: 25, kb: 16, icon: '🌌', color: '#2dd4bf', desc: '극지방 오로라 에너지파' },
+      { id: 'neon_stream', name: '네온 사이버 스트림', type: 'laser', cd: 0.1, dmg: 2.9, kb: 1.9, icon: '❇️', color: '#4ade80', desc: '사이버 펑크 네온 줄기' },
+      { id: 'hyper_blaster', name: '하이퍼 빔', type: 'laser', cd: 1.4, dmg: 45, kb: 28, icon: '💠', color: '#818cf8', desc: '화면을 가득 채우는 극대 레이저' },
+      { id: 'microwaver', name: '전자레인지 극초단파', type: 'laser', cd: 0.1, dmg: 2.7, kb: 1.4, icon: '📡', color: '#facc15', desc: '내부부터 끓어오르는 열선' },
+
+      // --- Category 4: Quirky, Magic & Gag Weapons (36개) ---
+      { id: 'snowflake', name: '얼음 눈꽃포', type: 'quirky', cd: 0.9, dmg: 20, kb: 12, icon: '❄️', color: '#38bdf8', desc: '적을 꽁꽁 얼려버림' },
+      { id: 'icecream', name: '트리플 아이스크림', type: 'quirky', cd: 0.68, dmg: 16, kb: 11, icon: '🍦', color: '#f472b6', desc: '3단 스쿱 탄환 난사' },
+      { id: 'banana', name: '바나나 껍질 폭탄', type: 'quirky', cd: 0.95, dmg: 11, kb: 22, icon: '🍌', color: '#facc15', desc: '밟으면 미끄러지는 바나나' },
+      { id: 'fish', name: '파닥이는 활어', type: 'quirky', cd: 0.48, dmg: 17, kb: 19, icon: '🐟', color: '#38bdf8', desc: '얼굴 뺨따귀 찰싹 연타' },
+      { id: 'magicwand', name: '요정의 별 마법봉', type: 'quirky', cd: 0.58, dmg: 19, kb: 11, icon: '🪄', color: '#e879f9', desc: '반짝이는 유도 별가루 탄' },
+      { id: 'plunger', name: '화장실 뚫어뻥', type: 'quirky', cd: 0.78, dmg: 15, kb: -20, icon: '🪠', color: '#b45309', desc: '적을 강제로 끌어당김!' },
+      { id: 'rubberduck', name: '폭발 고무오리', type: 'quirky', cd: 1.05, dmg: 29, kb: 22, icon: '🦆', color: '#facc15', desc: '삑삑 소리내며 튕기는 오리' },
+      { id: 'pizzaslice', name: '치즈 페퍼로니 피자', type: 'quirky', cd: 0.72, dmg: 20, kb: 14, icon: '🍕', color: '#f97316', desc: '회전하는 피자 수리검' },
+      { id: 'cactus', name: '선인장 발사대', type: 'quirky', cd: 0.58, dmg: 15, kb: 9, icon: '🌵', color: '#16a34a', desc: '무수한 가시 폭풍 사격' },
+      { id: 'tornadorod', name: '토네이도 봉', type: 'quirky', cd: 1.25, dmg: 25, kb: 26, icon: '🌪️', color: '#cbd5e1', desc: '소용돌이를 소환해 띄움' },
+      { id: 'blackhole', name: '블랙홀 건', type: 'quirky', cd: 1.7, dmg: 32, kb: -8, icon: '🕳️', color: '#a855f7', desc: '모든 것을 빨아들이는 특이점' },
+      { id: 'fireworks', name: '축제 폭죽포', type: 'quirky', cd: 1.05, dmg: 27, kb: 20, icon: '🎆', color: '#f43f5e', desc: '화려한 연쇄 폭죽 작렬' },
+      { id: 'anvil', name: '만화 100t 모루', type: 'quirky', cd: 1.45, dmg: 48, kb: 30, icon: '🔨', color: '#475569', desc: '하늘에서 쇳덩이 모루 낙하' },
+      { id: 'drone', name: '미니 공격 드론', type: 'quirky', cd: 1.8, dmg: 13, kb: 8, icon: '🛸', color: '#06b6d4', desc: '자율 비행 미니 드론 소환' },
+      { id: 'meteor', name: '메테오 지팡이', type: 'quirky', cd: 1.55, dmg: 40, kb: 25, icon: '☄️', color: '#ea580c', desc: '하늘에서 운석 소환' },
+      { id: 'teddybear', name: '자이언트 테디베어', type: 'quirky', cd: 1.15, dmg: 30, kb: 23, icon: '🧸', color: '#b45309', desc: '거대 곰인형 몸통 박치기' },
+      { id: 'coingun', name: '돈 자랑 코인건', type: 'quirky', cd: 0.38, dmg: 12, kb: 8, icon: '🪙', color: '#eab308', desc: '황금 코인 세례 발사' },
+      { id: 'feather', name: '깃털 먼지떨이', type: 'quirky', cd: 0.65, dmg: 9, kb: 24, icon: '🪶', color: '#f472b6', desc: '적을 간지럽혀 공중 체공' },
+      { id: 'mushroom', name: '환각 독버섯', type: 'quirky', cd: 0.95, dmg: 21, kb: 10, icon: '🍄', color: '#a855f7', desc: '보라색 독가스 포자 살포' },
+      { id: 'chickencannon', name: '꼬꼬댁 닭 대포', type: 'quirky', cd: 1.05, dmg: 28, kb: 21, icon: '🐔', color: '#f59e0b', desc: '날뛰는 유도 닭알 발사' },
+      { id: 'holylight', name: '성스러운 십자가 광휘', type: 'quirky', cd: 1.35, dmg: 37, kb: 21, icon: '✝️', color: '#fef08a', desc: '하늘에서 내리는 심판의 빛기둥' },
+      { id: 'shuriken', name: '닌자 분신 표창', type: 'quirky', cd: 0.78, dmg: 19, kb: 12, icon: '🥷', color: '#94a3b8', desc: '6방향 원형 표창 투척' },
+      { id: 'clockwork', name: '태엽 시한폭탄', type: 'quirky', cd: 1.15, dmg: 31, kb: 23, icon: '⏰', color: '#fbbf24', desc: '째깍째깍 쾅! 지연 폭발' },
+      { id: 'bubblegun', name: '비눗방울 트랩건', type: 'quirky', cd: 0.65, dmg: 13, kb: 14, icon: '🫧', color: '#60a5fa', desc: '방울 속에 가두어 공중 부양' },
+      { id: 'tnt_barrel', name: 'TNT 화약통', type: 'quirky', cd: 1.3, dmg: 38, kb: 27, icon: '🧨', color: '#dc2626', desc: '구르는 위험한 화약통' },
+      { id: 'toilet_paper', name: '화장지 난사기', type: 'quirky', cd: 0.35, dmg: 10, kb: 11, icon: '🧻', color: '#f1f5f9', desc: '끝없이 날아가는 휴지 롤' },
+      { id: 'hot_pepper', name: '지옥의 땡초 고추', type: 'quirky', cd: 0.7, dmg: 22, kb: 15, icon: '🌶️', color: '#b91c1c', desc: '입에서 불을 뿜는 화염구' },
+      { id: 'disco_ball', name: '파티 미러볼', type: 'quirky', cd: 1.25, dmg: 26, kb: 18, icon: '🪩', color: '#f43f5e', desc: '춤추게 만드는 레이저 섬광' },
+      { id: 'magnet_repulsor', name: '자석 척력포', type: 'quirky', cd: 0.85, dmg: 16, kb: 30, icon: '🧲', color: '#ef4444', desc: '적을 맵 끝으로 튕겨내는 자기장' },
+      { id: 'boxing_bell', name: '땡땡 라운드 벨', type: 'quirky', cd: 0.8, dmg: 21, kb: 22, icon: '🔔', color: '#eab308', desc: '울림통 충격파 진동' },
+      { id: 'present_bomb', name: '서프라이즈 선물상자', type: 'quirky', cd: 1.1, dmg: 30, kb: 20, icon: '🎁', color: '#10b981', desc: '열리면 폭발하는 선물상자' },
+      { id: 'traffic_cone', name: '도로 칼라콘 투척기', type: 'quirky', cd: 0.6, dmg: 17, kb: 16, icon: '🚧', color: '#f97316', desc: '주황색 콘 머리통 타격' },
+      { id: 'ghost_wisp', name: '도깨비불 영혼', type: 'quirky', cd: 0.75, dmg: 23, kb: 13, icon: '👻', color: '#67e8f9', desc: '느리게 유도되는 푸른 도깨비불' },
+      { id: 'watering_can', name: '마법 물뿌리개', type: 'quirky', cd: 0.5, dmg: 14, kb: 12, icon: '🪴', color: '#22c55e', desc: '덩굴을 자라나게 하는 방울' },
+      { id: 'poop', name: '황금 응가 투척기', type: 'quirky', cd: 0.6, dmg: 18, kb: 18, icon: '💩', color: '#a16207', desc: '냄새나고 끈적한 황금 응가탄' },
+      { id: 'cupid_arrow', name: '큐피드의 사랑의 화살', type: 'quirky', cd: 0.8, dmg: 24, kb: 14, icon: '💘', color: '#ec4899', desc: '하트 폭발을 일으키는 핑크 화살' }
+    ];
+
+    /* ==========================================================================
+       3. DYNAMIC INTERACTIVE MAPS DATABASE (16 DISTINCT MAPS)
+       ========================================================================== */
+    const MAPS_DATABASE = [
+      {
+        id: 'sky_arena',
+        name: '스카이 아레나',
+        desc: '기본 공중 부유섬 & 좌우 리프트',
+        bgGrad: ['#0f172a', '#1e293b'],
+        platforms: (w, h) => [
+          { x: w * 0.2, y: h * 0.75, width: w * 0.6, height: 28, color: '#334155' },
+          { x: w * 0.1, y: h * 0.5, width: w * 0.22, height: 18, color: '#475569' },
+          { x: w * 0.68, y: h * 0.5, width: w * 0.22, height: 18, color: '#475569' }
+        ]
+      },
+      {
+        id: 'pinball_frenzy',
+        name: '핀볼 킹덤',
+        desc: '탄성 200% 튕김 범퍼 & 바운스 패드',
+        bgGrad: ['#3b0764', '#1e1b4b'],
+        bumpers: (w, h) => [
+          { x: w * 0.5, y: h * 0.45, r: 40, color: '#f43f5e' },
+          { x: w * 0.28, y: h * 0.32, r: 30, color: '#fbbf24' },
+          { x: w * 0.72, y: h * 0.32, r: 30, color: '#fbbf24' }
+        ],
+        platforms: (w, h) => [
+          { x: w * 0.15, y: h * 0.82, width: w * 0.7, height: 26, color: '#6b21a8', bounce: 1.7 },
+          { x: w * 0.38, y: h * 0.64, width: w * 0.24, height: 16, color: '#ec4899', bounce: 2.0 }
+        ]
+      },
+      {
+        id: 'cyber_sawmill',
+        name: '사이버 전기톱 공장',
+        desc: '중앙 회전 톱날 칼날 & 컨베이어 벨트',
+        bgGrad: ['#042f2e', '#0f172a'],
+        rotators: (w, h) => [
+          { x: w * 0.5, y: h * 0.6, r: 42, speed: 0.08, color: '#ef4444', lethal: true },
+          { x: w * 0.2, y: h * 0.35, r: 28, speed: -0.06, color: '#ef4444', lethal: true },
+          { x: w * 0.8, y: h * 0.35, r: 28, speed: 0.06, color: '#ef4444', lethal: true }
+        ],
+        platforms: (w, h) => [
+          { x: w * 0.12, y: h * 0.78, width: w * 0.76, height: 26, color: '#134e4a', conveyor: 2.5 },
+          { x: w * 0.32, y: h * 0.48, width: w * 0.36, height: 18, color: '#115e59' }
+        ]
+      },
+      {
+        id: 'portal_lab',
+        name: '차원 포털 연구소',
+        desc: '들어가면 반대편으로 워프하는 포털 게이트',
+        bgGrad: ['#172554', '#1e1b4b'],
+        portals: (w, h) => [
+          { id: 1, x: w * 0.12, y: h * 0.68, r: 28, targetX: w * 0.88, targetY: h * 0.32, color: '#06b6d4' },
+          { id: 2, x: w * 0.88, y: h * 0.68, r: 28, targetX: w * 0.12, targetY: h * 0.32, color: '#f97316' }
+        ],
+        platforms: (w, h) => [
+          { x: w * 0.08, y: h * 0.76, width: w * 0.25, height: 22, color: '#1e3a8a' },
+          { x: w * 0.67, y: h * 0.76, width: w * 0.25, height: 22, color: '#1e3a8a' },
+          { x: w * 0.35, y: h * 0.52, width: w * 0.3, height: 20, color: '#2563eb' },
+          { x: w * 0.08, y: h * 0.38, width: w * 0.22, height: 18, color: '#1d4ed8' },
+          { x: w * 0.70, y: h * 0.38, width: w * 0.22, height: 18, color: '#1d4ed8' }
+        ]
+      },
+      {
+        id: 'lava_forge',
+        name: '용암 제련소',
+        desc: '하단 치명적인 끓는 용암 & 간헐적 화염탄',
+        hazard: 'lava',
+        bgGrad: ['#450a0a', '#7f1d1d'],
+        platforms: (w, h) => [
+          { x: w * 0.15, y: h * 0.72, width: w * 0.28, height: 24, color: '#78350f' },
+          { x: w * 0.57, y: h * 0.72, width: w * 0.28, height: 24, color: '#78350f' },
+          { x: w * 0.35, y: h * 0.48, width: w * 0.3, height: 20, color: '#b45309' }
+        ]
+      },
+      {
+        id: 'anti_gravity',
+        name: '무중력 우주 정거장',
+        desc: '0.15G 초저중력 & 중앙 수직 상승 리프트 기류',
+        gravity: 0.15,
+        hazard: 'space',
+        bgGrad: ['#020617', '#0f172a'],
+        updrafts: (w, h) => [
+          { x: w * 0.42, y: h * 0.2, width: w * 0.16, height: h * 0.6, force: -0.45 }
+        ],
+        platforms: (w, h) => [
+          { x: w * 0.1, y: h * 0.7, width: w * 0.26, height: 22, color: '#334155' },
+          { x: w * 0.64, y: h * 0.7, width: w * 0.26, height: 22, color: '#334155' },
+          { x: w * 0.32, y: h * 0.38, width: w * 0.36, height: 18, color: '#475569' }
+        ]
+      },
+      {
+        id: 'ice_peaks',
+        name: '빙하 미끄럼 봉우리',
+        desc: '마찰 계수 0.99 빙판길 & 낙하하는 고드름',
+        friction: 0.992,
+        hazard: 'icicles',
+        bgGrad: ['#082f49', '#0c4a6e'],
+        platforms: (w, h) => [
+          { x: w * 0.12, y: h * 0.76, width: w * 0.76, height: 26, color: '#38bdf8' },
+          { x: w * 0.22, y: h * 0.52, width: w * 0.24, height: 18, color: '#7dd3fc' },
+          { x: w * 0.54, y: h * 0.52, width: w * 0.24, height: 18, color: '#7dd3fc' }
+        ]
+      },
+      {
+        id: 'moving_elevators',
+        name: '시계탑 엘리베이터',
+        desc: '상하로 움직이는 2대의 기계식 엘리베이터',
+        bgGrad: ['#292524', '#44403c'],
+        movingPlats: [
+          { baseRatioX: 0.22, widthRatio: 0.22, height: 20, minYRatio: 0.35, maxYRatio: 0.75, speed: 1.8, dir: 1, currentYRatio: 0.4 },
+          { baseRatioX: 0.56, widthRatio: 0.22, height: 20, minYRatio: 0.35, maxYRatio: 0.75, speed: 1.8, dir: -1, currentYRatio: 0.7 }
+        ],
+        platforms: (w, h) => [
+          { x: w * 0.38, y: h * 0.55, width: w * 0.24, height: 20, color: '#ca8a04' }
+        ]
+      },
+      {
+        id: 'acid_sewer',
+        name: '독극물 하수처리장',
+        desc: '지속적인 산성 분수 노즐 & 미끄러운 파이프',
+        hazard: 'acid',
+        bgGrad: ['#14532d', '#052e16'],
+        platforms: (w, h) => [
+          { x: w * 0.08, y: h * 0.78, width: w * 0.25, height: 24, color: '#15803d' },
+          { x: w * 0.38, y: h * 0.78, width: w * 0.24, height: 24, color: '#15803d' },
+          { x: w * 0.67, y: h * 0.78, width: w * 0.25, height: 24, color: '#15803d' },
+          { x: w * 0.25, y: h * 0.45, width: w * 0.5, height: 20, color: '#22c55e' }
+        ]
+      },
+      {
+        id: 'crumbling_ruins',
+        name: '붕괴하는 그리드 유적',
+        desc: '발을 디디면 1.5초 후 사라졌다 리스폰되는 발판',
+        hazard: 'vanishing',
+        bgGrad: ['#1c1917', '#292524'],
+        platforms: (w, h) => {
+          const plats = [];
+          for (let i = 0; i < 6; i++) {
+            plats.push({
+              x: w * 0.12 + i * (w * 0.13),
+              y: h * 0.72 - (i % 2 === 0 ? 0 : 70),
+              width: w * 0.1,
+              height: 20,
+              color: '#d97706',
+              vanishTimer: -1,
+              respawnTimer: -1
+            });
+          }
+          return plats;
+        }
+      },
+      {
+        id: 'windy_gorge',
+        name: '돌풍의 협곡',
+        desc: '좌우로 번갈아가며 스틱맨을 미는 거센 태풍',
+        hazard: 'wind',
+        bgGrad: ['#312e81', '#1e1b4b'],
+        platforms: (w, h) => [
+          { x: w * 0.15, y: h * 0.8, width: w * 0.7, height: 24, color: '#4338ca' },
+          { x: w * 0.1, y: h * 0.5, width: w * 0.2, height: 18, color: '#6366f1' },
+          { x: w * 0.4, y: h * 0.38, width: w * 0.2, height: 18, color: '#6366f1' },
+          { x: w * 0.7, y: h * 0.5, width: w * 0.2, height: 18, color: '#6366f1' }
+        ]
+      },
+      {
+        id: 'bouncy_mushroom',
+        name: '거대 버섯 정글',
+        desc: '밟으면 하늘 높이 점프하는 버섯 갓 머리',
+        bgGrad: ['#581c87', '#3b0764'],
+        platforms: (w, h) => [
+          { x: w * 0.15, y: h * 0.78, width: w * 0.2, height: 25, color: '#c084fc', bounce: 2.1 },
+          { x: w * 0.42, y: h * 0.65, width: w * 0.16, height: 25, color: '#f43f5e', bounce: 2.3 },
+          { x: w * 0.65, y: h * 0.78, width: w * 0.2, height: 25, color: '#c084fc', bounce: 2.1 }
+        ]
+      },
+      {
+        id: 'laser_grid',
+        name: '레이저 감옥 매트릭스',
+        desc: '주기적으로 켜졌다 꺼지는 치명적인 세로 레이저선',
+        hazard: 'matrix_lasers',
+        bgGrad: ['#052e16', '#022c22'],
+        platforms: (w, h) => [
+          { x: w * 0.1, y: h * 0.75, width: w * 0.8, height: 24, color: '#065f46' },
+          { x: w * 0.25, y: h * 0.45, width: w * 0.2, height: 18, color: '#059669' },
+          { x: w * 0.55, y: h * 0.45, width: w * 0.2, height: 18, color: '#059669' }
+        ]
+      },
+      {
+        id: 'conveyor_chaos',
+        name: '벨트 컨베이어 대혼란',
+        desc: '좌우 반대 방향으로 빠르게 움직이는 공장 벨트',
+        bgGrad: ['#1e293b', '#0f172a'],
+        platforms: (w, h) => [
+          { x: w * 0.1, y: h * 0.8, width: w * 0.38, height: 24, color: '#f59e0b', conveyor: 3.5 },
+          { x: w * 0.52, y: h * 0.8, width: w * 0.38, height: 24, color: '#f59e0b', conveyor: -3.5 },
+          { x: w * 0.3, y: h * 0.5, width: w * 0.4, height: 20, color: '#d97706', conveyor: 2.0 }
+        ]
+      },
+      {
+        id: 'trampoline_fun',
+        name: '트램펄린 루프탑',
+        desc: '낙하 속도가 빠를수록 더 높이 치솟는 초탄성 트램펄린',
+        bgGrad: ['#701a75', '#4a044e'],
+        platforms: (w, h) => [
+          { x: w * 0.12, y: h * 0.82, width: w * 0.32, height: 22, color: '#db2777', bounce: 2.2 },
+          { x: w * 0.56, y: h * 0.82, width: w * 0.32, height: 22, color: '#db2777', bounce: 2.2 },
+          { x: w * 0.35, y: h * 0.38, width: w * 0.3, height: 18, color: '#f472b6' }
+        ]
+      },
+      {
+        id: 'volcano_inferno',
+        name: '화산 대폭발',
+        desc: '하늘에서 무차별 폭격되는 화산탄 메테오',
+        hazard: 'volcano_meteors',
+        bgGrad: ['#7c2d12', '#431407'],
+        platforms: (w, h) => [
+          { x: w * 0.18, y: h * 0.74, width: w * 0.64, height: 28, color: '#9a3412' },
+          { x: w * 0.32, y: h * 0.48, width: w * 0.36, height: 20, color: '#c2410c' }
+        ]
+      }
+    ];
+
+    /* ==========================================================================
+       4. STICKMAN FIGHTER CLASS
+       ========================================================================== */
+    class Stickman {
+      constructor(id, x, y, color, isAI = false) {
+        this.id = id;
+        this.x = x;
+        this.y = y;
+        this.vx = 0;
+        this.vy = 0;
+        this.radius = 16;
+        this.color = color;
+        this.isAI = isAI;
+        this.hp = 100;
+        this.maxHp = 100;
+        this.facingAngle = 0;
+        this.weapon = WEAPONS_DATABASE[0];
+        this.weaponCooldown = 0;
+        this.isGrounded = false;
+        this.scale = 1.0;
+        this.scaleTimer = 0;
+        this.frozenTimer = 0;
+        this.bubbleTimer = 0;
+        this.portalCooldown = 0;
+
+        this.animTime = Math.random() * 100;
+      }
+
+      update(game) {
+        // Status Timers
+        if (this.scaleTimer > 0) {
+          this.scaleTimer -= 1 / 60;
+          if (this.scaleTimer <= 0) this.scale = 1.0;
+        }
+        if (this.frozenTimer > 0) {
+          this.frozenTimer -= 1 / 60;
+          this.vx *= 0.8;
+          return; // 얼어붙으면 이동 불가
+        }
+        if (this.bubbleTimer > 0) {
+          this.bubbleTimer -= 1 / 60;
+          this.vy -= 0.22; // 거품 부양
+        }
+        if (this.portalCooldown > 0) {
+          this.portalCooldown -= 1 / 60;
+        }
+
+        // Apply Gravity
+        const mapGravity = game.currentMap.gravity !== undefined ? game.currentMap.gravity : 0.46;
+        this.vy += mapGravity;
+
+        // Apply Wind Hazard
+        if (game.currentMap.hazard === 'wind') {
+          this.vx += Math.sin(game.gameTime * 1.5) * 0.25;
+        }
+
+        // Apply Friction
+        const mapFriction = game.currentMap.friction || 0.92;
+        this.vx *= mapFriction;
+        this.vy *= 0.985;
+
+        // Update Position
+        this.x += this.vx;
+        this.y += this.vy;
+
+        // Weapon Cooldown
+        if (this.weaponCooldown > 0) {
+          this.weaponCooldown -= 1 / 60;
+        }
+
+        // AI Logic
+        if (this.isAI) {
+          this.updateAI(game);
+        }
+
+        // Aiming Facing Angle
+        const opponent = game.getOpponent(this);
+        if (opponent) {
+          const dx = opponent.x - this.x;
+          const dy = opponent.y - this.y;
+          this.facingAngle = Math.atan2(dy, dx);
+        } else if (Math.abs(this.vx) > 0.1) {
+          this.facingAngle = this.vx > 0 ? 0 : Math.PI;
+        }
+
+        // Auto-Attack Trigger
+        if (this.weaponCooldown <= 0 && opponent && !game.isGameOver) {
+          this.fireWeapon(game, opponent);
+        }
+
+        this.animTime += 0.12;
+      }
+
+      updateAI(game) {
+        const opponent = game.getOpponent(this);
+        if (!opponent) return;
+
+        const dx = opponent.x - this.x;
+        const dy = opponent.y - this.y;
+        const dist = Math.hypot(dx, dy);
+
+        // 무기 스타일에 따른 스마트 거리 조절
+        if (this.weapon.type === 'blade') {
+          this.vx += dx > 0 ? 0.65 : -0.65;
+        } else if (this.weapon.type === 'gun' || this.weapon.type === 'laser') {
+          if (dist > 260) this.vx += dx > 0 ? 0.6 : -0.6;
+          else if (dist < 120) this.vx += dx > 0 ? -0.55 : 0.55; // 카이팅 백스텝
+        } else {
+          if (dist > 200) this.vx += dx > 0 ? 0.5 : -0.5;
+        }
+
+        // 점프 회피 및 도약 판단
+        if ((dy < -40 || Math.random() < 0.025) && this.isGrounded) {
+          this.vy = -11.5;
+          this.isGrounded = false;
+        }
+      }
+
+      fireWeapon(game, target) {
+        this.weaponCooldown = this.weapon.cd;
+        const aimAngle = this.facingAngle;
+        const handX = this.x + Math.cos(aimAngle) * 22;
+        const handY = this.y + Math.sin(aimAngle) * 22;
+
+        audioSynth.play(this.weapon.type === 'blade' ? 'slash' : this.weapon.type === 'laser' ? 'laser' : 'gunshot');
+
+        const wId = this.weapon.id;
+
+        if (this.weapon.type === 'blade') {
+          // 근접 베기 및 전방 돌진
+          this.vx += Math.cos(aimAngle) * 9;
+          this.vy += Math.sin(aimAngle) * 4;
+          game.spawnArcSlash(handX, handY, aimAngle, this.weapon.color, 65);
+          if (Math.hypot(target.x - handX, target.y - handY) < 80) {
+            target.takeDamage(this.weapon.dmg, aimAngle, this.weapon.kb, game);
+          }
+        } else if (wId === 'greatsword' || wId === 'hammer' || wId === 'anvil' || wId === 'anchor') {
+          // 광역 지면 충격파
+          game.spawnShockwave(this.x, this.y + 20, 100, this.weapon.color);
+          game.triggerScreenShake(9);
+          if (Math.hypot(target.x - this.x, target.y - this.y) < 120) {
+            target.takeDamage(this.weapon.dmg, aimAngle, this.weapon.kb, game);
+          }
+        } else if (this.weapon.type === 'laser') {
+          // 레이저 빔
+          game.spawnLaserBeam(handX, handY, aimAngle, this.weapon.color, this.weapon.dmg, this.weapon.kb, this);
+        } else {
+          // 원거리 투사체 (탄환, 개그 아이템)
+          const speed = wId === 'sniper' || wId === 'railgun' ? 26 : 14;
+          let count = 1;
+          if (wId === 'shotgun') count = 5;
+          else if (wId === 'assaultrifle') count = 4;
+          else if (wId === 'shuriken') count = 6;
+          else if (wId === 'crossbow') count = 3;
+
+          for (let i = 0; i < count; i++) {
+            const spread = (i - (count - 1) / 2) * 0.16;
+            const pAngle = aimAngle + spread;
+            game.spawnProjectile({
+              owner: this,
+              x: handX,
+              y: handY,
+              vx: Math.cos(pAngle) * speed,
+              vy: Math.sin(pAngle) * speed,
+              radius: 6,
+              color: this.weapon.color,
+              dmg: this.weapon.dmg / (count > 1 ? 1.4 : 1),
+              kb: this.weapon.kb,
+              icon: this.weapon.icon,
+              special: wId
+            });
+          }
+        }
+      }
+
+      takeDamage(amount, angle, knockback, game) {
+        if (game.isGameOver) return;
+        amount *= (1 / this.scale);
+        this.hp = Math.max(0, this.hp - amount);
+
+        this.vx += Math.cos(angle) * knockback;
+        this.vy += Math.sin(angle) * knockback - 2.5;
+
+        game.spawnFloatingText(`-${Math.round(amount)}`, this.x, this.y - 30, '#ef4444');
+        game.spawnParticles(this.x, this.y, this.color, 8);
+        audioSynth.play('hit');
+
+        if (this.hp <= 0) {
+          game.handlePlayerDeath(this);
+        }
+      }
+
+      draw(ctx) {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.scale(this.scale, this.scale);
+
+        // 빙결 이펙트
+        if (this.frozenTimer > 0) {
+          ctx.fillStyle = 'rgba(56, 189, 248, 0.65)';
+          ctx.fillRect(-22, -35, 44, 70);
+          ctx.strokeStyle = '#38bdf8';
+          ctx.strokeRect(-22, -35, 44, 70);
+        }
+
+        // 버블 트랩 이펙트
+        if (this.bubbleTimer > 0) {
+          ctx.beginPath();
+          ctx.arc(0, -5, 32, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(96, 165, 250, 0.35)';
+          ctx.fill();
+          ctx.strokeStyle = '#93c5fd';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        }
+
+        // 스틱맨 렌더링
+        const bodyColor = this.color;
+        ctx.strokeStyle = bodyColor;
+        ctx.lineWidth = 4.5;
+        ctx.lineCap = 'round';
+
+        // 머리
+        ctx.beginPath();
+        ctx.arc(0, -26, 10, 0, Math.PI * 2);
+        ctx.fillStyle = bodyColor;
+        ctx.fill();
+        ctx.stroke();
+
+        // 몸통
+        ctx.beginPath();
+        ctx.moveTo(0, -16);
+        ctx.lineTo(0, 10);
+        ctx.stroke();
+
+        // 다리
+        const legAnim = Math.sin(this.animTime * 12) * (Math.abs(this.vx) > 0.4 ? 12 : 3);
+        ctx.beginPath();
+        ctx.moveTo(0, 10);
+        ctx.lineTo(-8 + legAnim, 28);
+        ctx.moveTo(0, 10);
+        ctx.lineTo(8 - legAnim, 28);
+        ctx.stroke();
+
+        // 무기를 든 팔
+        const aimX = Math.cos(this.facingAngle) * 19;
+        const aimY = Math.sin(this.facingAngle) * 19;
+        ctx.beginPath();
+        ctx.moveTo(0, -10);
+        ctx.lineTo(aimX, aimY);
+        ctx.stroke();
+
+        // 무기 아이콘 회전 배치
+        ctx.save();
+        ctx.translate(aimX, aimY);
+        ctx.rotate(this.facingAngle);
+        ctx.font = '20px serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(this.weapon.icon, 8, 0);
+        ctx.restore();
+
+        // 쿨다운 휠 게이지 인디케이터
+        if (this.weaponCooldown > 0) {
+          const cdRatio = this.weaponCooldown / this.weapon.cd;
+          ctx.beginPath();
+          ctx.arc(0, -42, 6, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (1 - cdRatio));
+          ctx.strokeStyle = '#38bdf8';
+          ctx.lineWidth = 2.5;
+          ctx.stroke();
+        }
+
+        ctx.restore();
+      }
+    }
+
+    /* ==========================================================================
+       5. MAIN GAME ENGINE
+       ========================================================================== */
+    class GameEngine {
+      constructor() {
+        this.canvas = document.getElementById('gameCanvas');
+        this.ctx = this.canvas.getContext('2d');
+
+        this.gameMode = 'vs_ai';
+        this.targetWins = 3;
+        this.scoreP1 = 0;
+        this.scoreP2 = 0;
+
+        this.p1 = null;
+        this.p2 = null;
+
+        this.projectiles = [];
+        this.particles = [];
+        this.floatingTexts = [];
+        this.visualEffects = [];
+        this.mapPlatforms = [];
+        this.mapBumpers = [];
+        this.mapRotators = [];
+        this.mapPortals = [];
+        this.mapUpdrafts = [];
+        this.mapHazardEntities = [];
+
+        this.currentMap = MAPS_DATABASE[0];
+        this.weaponSelectMode = 'random';
+        this.fixedWeaponP1 = WEAPONS_DATABASE[0];
+
+        this.isPaused = false;
+        this.isGameOver = false;
+        this.gameTime = 0;
+        this.cameraShake = 0;
+        this.keys = {};
+
+        this.initCanvasSize();
+        this.setupEventListeners();
+        this.initMapGridUI();
+      }
+
+      initCanvasSize() {
+        this.canvas.width = window.innerWidth;
+        this.canvas.height = window.innerHeight;
+      }
+
+      setupEventListeners() {
+        window.addEventListener('resize', () => {
+          this.initCanvasSize();
+          this.setupCurrentMapObjects();
+        });
+
+        window.addEventListener('keydown', (e) => {
+          this.keys[e.key.toLowerCase()] = true;
+          audioSynth.init();
+        });
+        window.addEventListener('keyup', (e) => {
+          this.keys[e.key.toLowerCase()] = false;
+        });
+
+        this.setupJoysticks();
+      }
+
+      setupJoysticks() {
+        const setupZone = (zoneId, knobId, playerKey) => {
+          const zone = document.getElementById(zoneId);
+          const knob = document.getElementById(knobId);
+          if (!zone || !knob) return;
+
+          let touchId = null;
+          let startX = 0, startY = 0;
+
+          zone.addEventListener('touchstart', (e) => {
+            if (touchId !== null) return;
+            const touch = e.changedTouches[0];
+            touchId = touch.identifier;
+            startX = touch.clientX;
+            startY = touch.clientY;
+          });
+
+          zone.addEventListener('touchmove', (e) => {
+            if (touchId === null) return;
+            for (let i = 0; i < e.changedTouches.length; i++) {
+              if (e.changedTouches[i].identifier === touchId) {
+                const t = e.changedTouches[i];
+                const dx = t.clientX - startX;
+                const dy = t.clientY - startY;
+                const dist = Math.hypot(dx, dy);
+                const angle = Math.atan2(dy, dx);
+                const r = Math.min(dist, 40);
+
+                knob.style.transform = `translate(${Math.cos(angle) * r}px, ${Math.sin(angle) * r}px)`;
+
+                if (playerKey === 'p1') {
+                  this.keys['a'] = dx < -14;
+                  this.keys['d'] = dx > 14;
+                  this.keys['w'] = dy < -14;
+                  this.keys['s'] = dy > 14;
+                } else {
+                  this.keys['arrowleft'] = dx < -14;
+                  this.keys['arrowright'] = dx > 14;
+                  this.keys['arrowup'] = dy < -14;
+                  this.keys['arrowdown'] = dy > 14;
+                }
+              }
+            }
+          });
+
+          const endTouch = (e) => {
+            for (let i = 0; i < e.changedTouches.length; i++) {
+              if (e.changedTouches[i].identifier === touchId) {
+                touchId = null;
+                knob.style.transform = `translate(0px, 0px)`;
+                if (playerKey === 'p1') {
+                  this.keys['a'] = this.keys['d'] = this.keys['w'] = this.keys['s'] = false;
+                } else {
+                  this.keys['arrowleft'] = this.keys['arrowright'] = this.keys['arrowup'] = this.keys['arrowdown'] = false;
+                }
+              }
+            }
+          };
+
+          zone.addEventListener('touchend', endTouch);
+          zone.addEventListener('touchcancel', endTouch);
+        };
+
+        setupZone('joystick-p1', 'knob-p1', 'p1');
+        setupZone('joystick-p2', 'knob-p2', 'p2');
+      }
+
+      initMapGridUI() {
+        const grid = document.getElementById('map-grid');
+        if (!grid) return;
+        grid.innerHTML = '';
+
+        MAPS_DATABASE.forEach((map, idx) => {
+          const card = document.createElement('div');
+          card.className = `p-2 rounded-xl bg-slate-800 border ${idx === 0 ? 'border-amber-400 bg-slate-700' : 'border-slate-700'} cursor-pointer hover:border-amber-400 transition text-center`;
+          card.innerHTML = `
+            <div class="h-10 rounded-lg mb-1 flex items-center justify-center font-bold text-[11px] text-white shadow-inner" style="background: linear-gradient(135deg, ${map.bgGrad[0]}, ${map.bgGrad[1]})">
+              ${map.name}
+            </div>
+            <div class="text-[9px] text-slate-400 truncate">${map.desc}</div>
+          `;
+          card.onclick = () => {
+            document.querySelectorAll('#map-grid > div').forEach(c => c.classList.remove('border-amber-400', 'bg-slate-700'));
+            card.classList.add('border-amber-400', 'bg-slate-700');
+            this.currentMap = map;
+            document.getElementById('selected-map-name').innerText = map.name;
+          };
+          grid.appendChild(card);
+        });
+      }
+
+      setupCurrentMapObjects() {
+        const w = this.canvas.width;
+        const h = this.canvas.height;
+
+        this.mapPlatforms = this.currentMap.platforms ? this.currentMap.platforms(w, h) : [];
+        this.mapBumpers = this.currentMap.bumpers ? this.currentMap.bumpers(w, h) : [];
+        this.mapRotators = this.currentMap.rotators ? this.currentMap.rotators(w, h) : [];
+        this.mapPortals = this.currentMap.portals ? this.currentMap.portals(w, h) : [];
+        this.mapUpdrafts = this.currentMap.updrafts ? this.currentMap.updrafts(w, h) : [];
+        this.mapHazardEntities = [];
+
+        // Moving Elevators Setup
+        if (this.currentMap.movingPlats) {
+          this.currentMap.movingPlats.forEach(mp => {
+            this.mapPlatforms.push({
+              x: w * mp.baseRatioX,
+              y: h * mp.currentYRatio,
+              width: w * mp.widthRatio,
+              height: mp.height,
+              color: '#ca8a04',
+              isElevator: true,
+              data: mp
+            });
+          });
+        }
+      }
+
+      startNewMatch() {
+        this.scoreP1 = 0;
+        this.scoreP2 = 0;
+        this.startRound();
+
+        document.getElementById('main-menu').classList.add('hidden');
+        document.getElementById('hud-layer').classList.remove('hidden');
+        document.getElementById('btn-pause').classList.remove('hidden');
+
+        if ('ontouchstart' in window || this.gameMode === '1v1') {
+          document.getElementById('joystick-p1').classList.remove('hidden');
+          if (this.gameMode === '1v1') {
+            document.getElementById('joystick-p2').classList.remove('hidden');
+          }
+        }
+      }
+
+      startRound() {
+        this.isGameOver = false;
+        this.projectiles = [];
+        this.particles = [];
+        this.floatingTexts = [];
+        this.visualEffects = [];
+        this.gameTime = 0;
+
+        // Stickmen Spawn
+        this.p1 = new Stickman('p1', this.canvas.width * 0.28, this.canvas.height * 0.4, '#3b82f6', false);
+        this.p2 = new Stickman('p2', this.canvas.width * 0.72, this.canvas.height * 0.4, '#ef4444', this.gameMode !== '1v1');
+
+        // 무기 배정 (124종 풀에서 랜덤 또는 선택)
+        if (this.weaponSelectMode === 'random') {
+          this.p1.weapon = WEAPONS_DATABASE[Math.floor(Math.random() * WEAPONS_DATABASE.length)];
+          this.p2.weapon = WEAPONS_DATABASE[Math.floor(Math.random() * WEAPONS_DATABASE.length)];
+        } else {
+          this.p1.weapon = this.fixedWeaponP1;
+          this.p2.weapon = WEAPONS_DATABASE[Math.floor(Math.random() * WEAPONS_DATABASE.length)];
+        }
+
+        this.setupCurrentMapObjects();
+        this.updateHUD();
+      }
+
+      getOpponent(player) {
+        return player.id === 'p1' ? this.p2 : this.p1;
+      }
+
+      handleInput() {
+        if (!this.p1 || this.isGameOver) return;
+
+        // Player 1 (WASD)
+        if (this.keys['a']) this.p1.vx -= 0.7;
+        if (this.keys['d']) this.p1.vx += 0.7;
+        if (this.keys['w'] && this.p1.isGrounded) {
+          this.p1.vy = -12;
+          this.p1.isGrounded = false;
+        }
+        if (this.keys['s']) this.p1.vy += 1.1;
+
+        // Player 2 (Arrows - 1v1 Mode)
+        if (this.gameMode === '1v1' && this.p2) {
+          if (this.keys['arrowleft']) this.p2.vx -= 0.7;
+          if (this.keys['arrowright']) this.p2.vx += 0.7;
+          if (this.keys['arrowup'] && this.p2.isGrounded) {
+            this.p2.vy = -12;
+            this.p2.isGrounded = false;
+          }
+          if (this.keys['arrowdown']) this.p2.vy += 1.1;
+        }
+      }
+
+      update() {
+        if (this.isPaused) return;
+        this.gameTime += 1 / 60;
+
+        this.handleInput();
+
+        if (this.p1) this.p1.update(this);
+        if (this.p2) this.p2.update(this);
+
+        this.updateInteractiveMapGimmicks();
+        this.handlePlatformCollisions(this.p1);
+        this.handlePlatformCollisions(this.p2);
+
+        // Update Projectiles
+        for (let i = this.projectiles.length - 1; i >= 0; i--) {
+          const p = this.projectiles[i];
+          p.x += p.vx;
+          p.y += p.vy;
+
+          const target = this.getOpponent(p.owner);
+          if (target && Math.hypot(target.x - p.x, target.y - p.y) < target.radius + p.radius) {
+            target.takeDamage(p.dmg, Math.atan2(p.vy, p.vx), p.kb, this);
+
+            // Special Effects Trigger
+            if (p.special === 'snowflake' || p.special === 'freeze_gun') target.frozenTimer = 1.4;
+            if (p.special === 'bubblegun') target.bubbleTimer = 2.2;
+            if (p.special === 'alienray') { target.scale = 0.5; target.scaleTimer = 4.0; }
+            if (p.special === 'plunger') {
+              target.vx = (p.owner.x - target.x) * 0.12;
+              target.vy = (p.owner.y - target.y) * 0.12;
+            }
+
+            this.spawnParticles(p.x, p.y, p.color, 6);
+            this.projectiles.splice(i, 1);
+            continue;
+          }
+
+          if (p.x < -100 || p.x > this.canvas.width + 100 || p.y < -100 || p.y > this.canvas.height + 100) {
+            this.projectiles.splice(i, 1);
+          }
+        }
+
+        // Update Particles
+        for (let i = this.particles.length - 1; i >= 0; i--) {
+          const pt = this.particles[i];
+          pt.x += pt.vx;
+          pt.y += pt.vy;
+          pt.life -= 0.03;
+          if (pt.life <= 0) this.particles.splice(i, 1);
+        }
+
+        // Update Floating Text
+        for (let i = this.floatingTexts.length - 1; i >= 0; i--) {
+          const ft = this.floatingTexts[i];
+          ft.y -= 1;
+          ft.life -= 0.02;
+          if (ft.life <= 0) this.floatingTexts.splice(i, 1);
+        }
+
+        if (this.cameraShake > 0) this.cameraShake *= 0.88;
+        this.updateHUD();
+      }
+
+      updateInteractiveMapGimmicks() {
+        const w = this.canvas.width;
+        const h = this.canvas.height;
+        const players = [this.p1, this.p2].filter(Boolean);
+
+        // 1. Moving Elevators Logic
+        this.mapPlatforms.forEach(plat => {
+          if (plat.isElevator && plat.data) {
+            const d = plat.data;
+            plat.y += d.speed * d.dir;
+            if (plat.y < h * d.minYRatio) { plat.y = h * d.minYRatio; d.dir = 1; }
+            if (plat.y > h * d.maxYRatio) { plat.y = h * d.maxYRatio; d.dir = -1; }
+          }
+        });
+
+        // 2. Pinball Bumpers
+        this.mapBumpers.forEach(bumper => {
+          players.forEach(p => {
+            const dist = Math.hypot(p.x - bumper.x, p.y - bumper.y);
+            if (dist < bumper.r + p.radius) {
+              const angle = Math.atan2(p.y - bumper.y, p.x - bumper.x);
+              p.vx = Math.cos(angle) * 16;
+              p.vy = Math.sin(angle) * 16;
+              audioSynth.play('bounce');
+              this.spawnParticles(p.x, p.y, bumper.color, 8);
+              this.triggerScreenShake(5);
+            }
+          });
+        });
+
+        // 3. Rotating Lethal Sawmills
+        this.mapRotators.forEach(rot => {
+          rot.angle = (rot.angle || 0) + rot.speed;
+          players.forEach(p => {
+            const dist = Math.hypot(p.x - rot.x, p.y - rot.y);
+            if (dist < rot.r + p.radius) {
+              const angle = Math.atan2(p.y - rot.y, p.x - rot.x);
+              p.takeDamage(1.5, angle, 12, this);
+            }
+          });
+        });
+
+        // 4. Warp Portals
+        this.mapPortals.forEach(portal => {
+          players.forEach(p => {
+            if (p.portalCooldown <= 0) {
+              const dist = Math.hypot(p.x - portal.x, p.y - portal.y);
+              if (dist < portal.r + p.radius) {
+                p.x = portal.targetX;
+                p.y = portal.targetY;
+                p.portalCooldown = 1.0;
+                audioSynth.play('portal');
+                this.spawnParticles(portal.targetX, portal.targetY, portal.color, 12);
+              }
+            }
+          });
+        });
+
+        // 5. Zero-G Updraft Air Column
+        this.mapUpdrafts.forEach(ud => {
+          players.forEach(p => {
+            if (p.x > ud.x && p.x < ud.x + ud.width && p.y > ud.y && p.y < ud.y + ud.height) {
+              p.vy += ud.force;
+              if (Math.random() < 0.2) this.spawnParticles(p.x, p.y + 10, '#38bdf8', 1);
+            }
+          });
+        });
+
+        // 6. Volcano Falling Meteors
+        if (this.currentMap.hazard === 'volcano_meteors') {
+          if (Math.random() < 0.05) {
+            this.mapHazardEntities.push({
+              x: Math.random() * w,
+              y: -20,
+              vx: (Math.random() - 0.5) * 4,
+              vy: Math.random() * 5 + 6,
+              r: 12,
+              color: '#f97316'
+            });
+          }
+          for (let i = this.mapHazardEntities.length - 1; i >= 0; i--) {
+            const m = this.mapHazardEntities[i];
+            m.x += m.vx;
+            m.y += m.vy;
+            players.forEach(p => {
+              if (Math.hypot(p.x - m.x, p.y - m.y) < m.r + p.radius) {
+                p.takeDamage(15, Math.atan2(m.vy, m.vx), 12, this);
+                this.spawnParticles(m.x, m.y, '#ef4444', 10);
+                this.mapHazardEntities.splice(i, 1);
+              }
+            });
+            if (m.y > h + 30) this.mapHazardEntities.splice(i, 1);
+          }
+        }
+
+        // 7. Matrix Laser Grid
+        if (this.currentMap.hazard === 'matrix_lasers') {
+          const laserActive = Math.sin(this.gameTime * 2.5) > 0.2;
+          if (laserActive) {
+            const lx1 = w * 0.35;
+            const lx2 = w * 0.65;
+            players.forEach(p => {
+              if (Math.abs(p.x - lx1) < 14 || Math.abs(p.x - lx2) < 14) {
+                p.takeDamage(0.8, p.x > lx1 ? 0 : Math.PI, 8, this);
+              }
+            });
+          }
+        }
+      }
+
+      handlePlatformCollisions(player) {
+        if (!player) return;
+        player.isGrounded = false;
+
+        this.mapPlatforms.forEach(plat => {
+          // Vanishing Platform Logic
+          if (plat.respawnTimer !== undefined && plat.respawnTimer > 0) {
+            plat.respawnTimer -= 1 / 60;
+            return; // 아직 사라진 상태
+          }
+
+          if (player.x > plat.x && player.x < plat.x + plat.width) {
+            if (player.y + player.radius >= plat.y && player.y - player.radius <= plat.y + plat.height) {
+              if (player.vy > 0 && player.y < plat.y + 16) {
+                player.y = plat.y - player.radius;
+                player.vy = 0;
+                player.isGrounded = true;
+
+                // Conveyor Belt Velocity
+                if (plat.conveyor) {
+                  player.x += plat.conveyor;
+                }
+
+                // Super Bounce Pad
+                if (plat.bounce) {
+                  player.vy = -14 * plat.bounce;
+                  audioSynth.play('bounce');
+                }
+
+                // Vanishing trigger
+                if (plat.vanishTimer !== undefined && plat.vanishTimer === -1) {
+                  plat.vanishTimer = 1.2;
+                }
+              }
+            }
+          }
+
+          // Disintegrate platform timer
+          if (plat.vanishTimer !== undefined && plat.vanishTimer > 0) {
+            plat.vanishTimer -= 1 / 60;
+            if (plat.vanishTimer <= 0) {
+              plat.respawnTimer = 2.5; // 2.5초 후 복구
+              plat.vanishTimer = -1;
+            }
+          }
+        });
+
+        // Lava Pit Floor Death
+        if (this.currentMap.hazard === 'lava') {
+          if (player.y > this.canvas.height - 45) {
+            player.takeDamage(3, -Math.PI / 2, 10, this);
+            this.spawnParticles(player.x, this.canvas.height - 40, '#ef4444', 5);
+          }
+        }
+
+        // Screen Out of Bounds Death
+        if (player.y > this.canvas.height + 80) {
+          player.takeDamage(100, -Math.PI / 2, 0, this);
+        }
+      }
+
+      spawnProjectile(config) {
+        this.projectiles.push(config);
+      }
+
+      spawnArcSlash(x, y, angle, color, radius) {
+        this.visualEffects.push({ type: 'slash', x, y, angle, color, radius, life: 1.0 });
+      }
+
+      spawnShockwave(x, y, radius, color) {
+        this.visualEffects.push({ type: 'shockwave', x, y, radius, color, currentR: 6, life: 1.0 });
+      }
+
+      spawnLaserBeam(x, y, angle, color, dmg, kb, owner) {
+        const target = this.getOpponent(owner);
+        const endX = x + Math.cos(angle) * 850;
+        const endY = y + Math.sin(angle) * 850;
+
+        this.visualEffects.push({ type: 'laser', x, y, endX, endY, color, life: 0.22 });
+
+        if (target && Math.hypot(target.x - x, target.y - y) < 650) {
+          target.takeDamage(dmg, angle, kb, this);
+        }
+      }
+
+      spawnParticles(x, y, color, count) {
+        for (let i = 0; i < count; i++) {
+          this.particles.push({
+            x, y,
+            vx: (Math.random() - 0.5) * 8,
+            vy: (Math.random() - 0.5) * 8,
+            color,
+            life: 1.0,
+            size: Math.random() * 4 + 2
+          });
+        }
+      }
+
+      spawnFloatingText(text, x, y, color) {
+        this.floatingTexts.push({ text, x, y, color, life: 1.0 });
+      }
+
+      triggerScreenShake(intensity) {
+        this.cameraShake = intensity;
+      }
+
+      handlePlayerDeath(deadPlayer) {
+        if (this.isGameOver) return;
+        this.isGameOver = true;
+
+        const winner = deadPlayer.id === 'p1' ? 'PLAYER 2' : 'PLAYER 1';
+        if (deadPlayer.id === 'p1') this.scoreP2++;
+        else this.scoreP1++;
+
+        audioSynth.play('victory');
+
+        setTimeout(() => {
+          if (this.scoreP1 >= this.targetWins || this.scoreP2 >= this.targetWins) {
+            this.showVictoryModal(`${winner} 승리!`);
+          } else {
+            this.startRound();
+          }
+        }, 1400);
+      }
+
+      showVictoryModal(subtitle) {
+        document.getElementById('pause-victory-title').innerText = 'VICTORY!';
+        document.getElementById('pause-victory-subtitle').innerText = subtitle;
+        document.getElementById('btn-next-round').classList.remove('hidden');
+        document.getElementById('modal-pause-victory').classList.remove('hidden');
+      }
+
+      updateHUD() {
+        if (!this.p1 || !this.p2) return;
+
+        // P1
+        document.getElementById('hud-p1-hp-text').innerText = `${Math.ceil(this.p1.hp)} HP`;
+        document.getElementById('hud-p1-hp-bar').style.width = `${Math.max(0, (this.p1.hp / this.p1.maxHp) * 100)}%`;
+        document.getElementById('hud-p1-weapon').innerText = `${this.p1.weapon.icon} ${this.p1.weapon.name}`;
+        document.getElementById('hud-p1-type').innerText = this.p1.weapon.type;
+
+        // P2
+        document.getElementById('hud-p2-hp-text').innerText = `${Math.ceil(this.p2.hp)} HP`;
+        document.getElementById('hud-p2-hp-bar').style.width = `${Math.max(0, (this.p2.hp / this.p2.maxHp) * 100)}%`;
+        document.getElementById('hud-p2-weapon').innerText = `${this.p2.weapon.icon} ${this.p2.weapon.name}`;
+        document.getElementById('hud-p2-type').innerText = this.p2.weapon.type;
+
+        // Score
+        document.getElementById('score-p1').innerText = this.scoreP1;
+        document.getElementById('score-p2').innerText = this.scoreP2;
+        document.getElementById('hud-map-title').innerText = this.currentMap.name;
+      }
+
+      render() {
+        this.ctx.save();
+        if (this.cameraShake > 0.5) {
+          this.ctx.translate((Math.random() - 0.5) * this.cameraShake, (Math.random() - 0.5) * this.cameraShake);
+        }
+
+        // Map Background Gradient
+        const grad = this.ctx.createLinearGradient(0, 0, 0, this.canvas.height);
+        grad.addColorStop(0, this.currentMap.bgGrad[0]);
+        grad.addColorStop(1, this.currentMap.bgGrad[1]);
+        this.ctx.fillStyle = grad;
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+        // Draw Zero-G Updraft Fields
+        this.mapUpdrafts.forEach(ud => {
+          this.ctx.fillStyle = 'rgba(56, 189, 248, 0.15)';
+          this.ctx.fillRect(ud.x, ud.y, ud.width, ud.height);
+          this.ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
+          this.ctx.strokeRect(ud.x, ud.y, ud.width, ud.height);
+        });
+
+        // Draw Map Platforms
+        this.mapPlatforms.forEach(plat => {
+          if (plat.respawnTimer !== undefined && plat.respawnTimer > 0) return; // 사라진 블록
+          this.ctx.fillStyle = plat.color;
+          this.ctx.fillRect(plat.x, plat.y, plat.width, plat.height);
+          this.ctx.strokeStyle = '#64748b';
+          this.ctx.lineWidth = 2;
+          this.ctx.strokeRect(plat.x, plat.y, plat.width, plat.height);
+
+          // Conveyor markings
+          if (plat.conveyor) {
+            this.ctx.fillStyle = '#ffffff';
+            this.ctx.font = '10px monospace';
+            const dirIcon = plat.conveyor > 0 ? '>>>>>>' : '<<<<<<';
+            this.ctx.fillText(dirIcon, plat.x + plat.width / 2 - 20, plat.y + 14);
+          }
+        });
+
+        // Draw Bumpers
+        this.mapBumpers.forEach(bumper => {
+          this.ctx.beginPath();
+          this.ctx.arc(bumper.x, bumper.y, bumper.r, 0, Math.PI * 2);
+          this.ctx.fillStyle = bumper.color;
+          this.ctx.fill();
+          this.ctx.strokeStyle = '#ffffff';
+          this.ctx.lineWidth = 3;
+          this.ctx.stroke();
+        });
+
+        // Draw Rotating Sawmills
+        this.mapRotators.forEach(rot => {
+          this.ctx.save();
+          this.ctx.translate(rot.x, rot.y);
+          this.ctx.rotate(rot.angle || 0);
+          this.ctx.beginPath();
+          this.ctx.arc(0, 0, rot.r, 0, Math.PI * 2);
+          this.ctx.fillStyle = '#ef4444';
+          this.ctx.fill();
+          this.ctx.strokeStyle = '#fca5a5';
+          this.ctx.lineWidth = 3;
+          this.ctx.stroke();
+          // 톱날 이빨
+          for (let i = 0; i < 8; i++) {
+            this.ctx.rotate(Math.PI / 4);
+            this.ctx.fillStyle = '#fee2e2';
+            this.ctx.fillRect(rot.r - 4, -4, 8, 8);
+          }
+          this.ctx.restore();
+        });
+
+        // Draw Portals
+        this.mapPortals.forEach(portal => {
+          this.ctx.beginPath();
+          this.ctx.arc(portal.x, portal.y, portal.r, 0, Math.PI * 2);
+          this.ctx.strokeStyle = portal.color;
+          this.ctx.lineWidth = 4;
+          this.ctx.stroke();
+          this.ctx.fillStyle = portal.color + '44';
+          this.ctx.fill();
+        });
+
+        // Draw Lava Pit
+        if (this.currentMap.hazard === 'lava') {
+          this.ctx.fillStyle = '#ef4444';
+          this.ctx.fillRect(0, this.canvas.height - 40, this.canvas.width, 40);
+        }
+
+        // Draw Matrix Lasers
+        if (this.currentMap.hazard === 'matrix_lasers') {
+          const laserActive = Math.sin(this.gameTime * 2.5) > 0.2;
+          if (laserActive) {
+            this.ctx.strokeStyle = 'rgba(239, 68, 68, 0.85)';
+            this.ctx.lineWidth = 6;
+            [this.canvas.width * 0.35, this.canvas.width * 0.65].forEach(lx => {
+              this.ctx.beginPath();
+              this.ctx.moveTo(lx, 0);
+              this.ctx.lineTo(lx, this.canvas.height);
+              this.ctx.stroke();
+            });
+          }
+        }
+
+        // Draw Volcano Hazard Meteors
+        this.mapHazardEntities.forEach(m => {
+          this.ctx.beginPath();
+          this.ctx.arc(m.x, m.y, m.r, 0, Math.PI * 2);
+          this.ctx.fillStyle = m.color;
+          this.ctx.fill();
+        });
+
+        // Draw Stickmen
+        if (this.p1) this.p1.draw(this.ctx);
+        if (this.p2) this.p2.draw(this.ctx);
+
+        // Draw Projectiles
+        this.projectiles.forEach(p => {
+          this.ctx.font = '19px serif';
+          this.ctx.textAlign = 'center';
+          this.ctx.textBaseline = 'middle';
+          this.ctx.fillText(p.icon || '⏺️', p.x, p.y);
+        });
+
+        // Draw Visual Effects (Slash, shockwave, laser)
+        for (let i = this.visualEffects.length - 1; i >= 0; i--) {
+          const fx = this.visualEffects[i];
+          if (fx.type === 'laser') {
+            this.ctx.strokeStyle = fx.color;
+            this.ctx.lineWidth = 6;
+            this.ctx.beginPath();
+            this.ctx.moveTo(fx.x, fx.y);
+            this.ctx.lineTo(fx.endX, fx.endY);
+            this.ctx.stroke();
+          } else if (fx.type === 'shockwave') {
+            fx.currentR += 9;
+            this.ctx.strokeStyle = fx.color;
+            this.ctx.lineWidth = 4;
+            this.ctx.beginPath();
+            this.ctx.arc(fx.x, fx.y, fx.currentR, 0, Math.PI * 2);
+            this.ctx.stroke();
+          } else if (fx.type === 'slash') {
+            this.ctx.save();
+            this.ctx.translate(fx.x, fx.y);
+            this.ctx.rotate(fx.angle);
+            this.ctx.strokeStyle = fx.color;
+            this.ctx.lineWidth = 4;
+            this.ctx.beginPath();
+            this.ctx.arc(0, 0, fx.radius, -0.6, 0.6);
+            this.ctx.stroke();
+            this.ctx.restore();
+          }
+          fx.life -= 0.05;
+          if (fx.life <= 0) this.visualEffects.splice(i, 1);
+        }
+
+        // Draw Particles
+        this.particles.forEach(pt => {
+          this.ctx.fillStyle = pt.color;
+          this.ctx.beginPath();
+          this.ctx.arc(pt.x, pt.y, pt.size, 0, Math.PI * 2);
+          this.ctx.fill();
+        });
+
+        // Draw Floating Damage Texts
+        this.floatingTexts.forEach(ft => {
+          this.ctx.font = 'bold 16px Outfit';
+          this.ctx.fillStyle = ft.color;
+          this.ctx.fillText(ft.text, ft.x, ft.y);
+        });
+
+        this.ctx.restore();
+      }
+
+      loop() {
+        this.update();
+        this.render();
+        requestAnimationFrame(() => this.loop());
+      }
+    }
+
+    /* ==========================================================================
+       6. BOOTSTRAP & UI INTERACTION SETUP
+       ========================================================================== */
+    window.onload = () => {
+      const game = new GameEngine();
+      game.loop();
+
+      // Mode Selector
+      const modeBtns = document.querySelectorAll('.mode-btn');
+      modeBtns.forEach(btn => {
+        btn.onclick = () => {
+          modeBtns.forEach(b => {
+            b.classList.remove('active', 'bg-blue-600', 'border-blue-400');
+            b.classList.add('bg-slate-800', 'border-slate-700');
+          });
+          btn.classList.add('active', 'bg-blue-600', 'border-blue-400');
+          btn.classList.remove('bg-slate-800', 'border-slate-700');
+
+          if (btn.id === 'mode-vs-ai') game.gameMode = 'vs_ai';
+          if (btn.id === 'mode-survival') game.gameMode = 'survival';
+          if (btn.id === 'mode-1v1') game.gameMode = '1v1';
+        };
+      });
+
+      // Target Wins
+      const winBtns = document.querySelectorAll('.target-win-btn');
+      winBtns.forEach(btn => {
+        btn.onclick = () => {
+          winBtns.forEach(b => {
+            b.classList.remove('active', 'bg-blue-600', 'text-white');
+            b.classList.add('bg-slate-800', 'text-slate-300');
+          });
+          btn.classList.add('active', 'bg-blue-600', 'text-white');
+          game.targetWins = parseInt(btn.dataset.wins);
+        };
+      });
+
+      // Weapon Roulette / Selection
+      document.getElementById('btn-weapon-rand').onclick = () => {
+        game.weaponSelectMode = 'random';
+        document.getElementById('weapon-mode-tag').innerText = 'RANDOM';
+        document.getElementById('weapon-preview-title').innerText = 'Random Weapon Roulette';
+        document.getElementById('weapon-preview-icon').innerText = '🎲';
+      };
+
+      document.getElementById('btn-weapon-select').onclick = () => {
+        document.getElementById('modal-weapon-select').classList.remove('hidden');
+        renderWeaponCards('all', game);
+      };
+
+      document.getElementById('btn-close-weapon-modal').onclick = () => {
+        document.getElementById('modal-weapon-select').classList.add('hidden');
+      };
+
+      // Weapon Filter Tabs
+      const filterBtns = document.querySelectorAll('.weapon-filter-btn');
+      filterBtns.forEach(btn => {
+        btn.onclick = () => {
+          filterBtns.forEach(b => {
+            b.classList.remove('active', 'bg-blue-600');
+            b.classList.add('bg-slate-800', 'text-slate-300');
+          });
+          btn.classList.add('active', 'bg-blue-600');
+          btn.classList.remove('bg-slate-800', 'text-slate-300');
+          renderWeaponCards(btn.dataset.filter, game);
+        };
+      });
+
+      // Controls Modal
+      document.getElementById('btn-controls-info').onclick = () => {
+        document.getElementById('modal-controls').classList.remove('hidden');
+      };
+      document.getElementById('btn-close-controls').onclick = () => {
+        document.getElementById('modal-controls').classList.add('hidden');
+      };
+
+      // Pause Modals
+      document.getElementById('btn-pause').onclick = () => {
+        game.isPaused = true;
+        document.getElementById('pause-victory-title').innerText = 'GAME PAUSED';
+        document.getElementById('pause-victory-subtitle').innerText = '잠시 휴식 후 경기를 재개하세요';
+        document.getElementById('btn-next-round').classList.add('hidden');
+        document.getElementById('modal-pause-victory').classList.remove('hidden');
+      };
+
+      document.getElementById('btn-resume').onclick = () => {
+        game.isPaused = false;
+        document.getElementById('modal-pause-victory').classList.add('hidden');
+      };
+
+      document.getElementById('btn-restart').onclick = () => {
+        game.isPaused = false;
+        document.getElementById('modal-pause-victory').classList.add('hidden');
+        game.startNewMatch();
+      };
+
+      document.getElementById('btn-next-round').onclick = () => {
+        game.isPaused = false;
+        document.getElementById('modal-pause-victory').classList.add('hidden');
+        game.startRound();
+      };
+
+      document.getElementById('btn-return-menu').onclick = () => {
+        game.isPaused = false;
+        document.getElementById('modal-pause-victory').classList.add('hidden');
+        document.getElementById('hud-layer').classList.add('hidden');
+        document.getElementById('btn-pause').classList.add('hidden');
+        document.getElementById('joystick-p1').classList.add('hidden');
+        document.getElementById('joystick-p2').classList.add('hidden');
+        document.getElementById('main-menu').classList.remove('hidden');
+      };
+
+      // Battle Start Button
+      document.getElementById('btn-start-game').onclick = () => {
+        audioSynth.init();
+        game.startNewMatch();
+      };
+
+      // Sound Toggle
+      document.getElementById('btn-sound-toggle').onclick = () => {
+        audioSynth.muted = !audioSynth.muted;
+        document.getElementById('sound-icon').className = audioSynth.muted ? 'fa-solid fa-volume-xmark text-lg text-red-400' : 'fa-solid fa-volume-high text-lg text-slate-300';
+      };
+    };
+
+    function renderWeaponCards(filter, game) {
+      const grid = document.getElementById('weapon-modal-grid');
+      if (!grid) return;
+      grid.innerHTML = '';
+
+      const list = filter === 'all' ? WEAPONS_DATABASE : WEAPONS_DATABASE.filter(w => w.type === filter);
+
+      list.forEach(w => {
+        const card = document.createElement('div');
+        card.className = 'p-2.5 rounded-2xl bg-slate-900 border border-slate-700/80 hover:border-blue-400 hover:bg-slate-800 cursor-pointer transition flex flex-col items-center text-center shadow-md';
+        card.innerHTML = `
+          <div class="text-2xl mb-1">${w.icon}</div>
+          <div class="font-bold text-xs text-white truncate max-w-full">${w.name}</div>
+          <div class="text-[9px] text-blue-300 font-bold uppercase mt-0.5">${w.type}</div>
+          <div class="text-[9px] text-slate-400 line-clamp-1 mt-0.5">${w.desc}</div>
+        `;
+        card.onclick = () => {
+          game.weaponSelectMode = 'fixed';
+          game.fixedWeaponP1 = w;
+          document.getElementById('weapon-mode-tag').innerText = 'FIXED';
+          document.getElementById('weapon-preview-title').innerText = w.name;
+          document.getElementById('weapon-preview-icon').innerText = w.icon;
+          document.getElementById('modal-weapon-select').classList.add('hidden');
+        };
+        grid.appendChild(card);
+      });
+    }
+  </script>
+</body>
+</html>
